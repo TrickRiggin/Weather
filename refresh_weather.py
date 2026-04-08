@@ -59,6 +59,26 @@ def norm_cdf(x):
     return 0.5 * (1 + math.erf(x / math.sqrt(2)))
 
 
+# KDE bandwidth for "between" contract probability — represents typical per-model forecast error
+KDE_BANDWIDTH = 2.0  # degrees F
+
+
+def model_kde_prob(model_temps, floor, cap, bandwidth=KDE_BANDWIDTH):
+    """
+    Probability of temp falling in [floor, cap) using Kernel Density Estimation.
+    Places a gaussian kernel (bandwidth wide) around each model's prediction and
+    integrates over the bucket. This respects model clustering — if 5/7 models
+    predict 57-58F, the bucket gets ~70% probability instead of the ~11% that
+    the ensemble gaussian gives.
+    """
+    if not model_temps:
+        return 0.5
+    total = 0
+    for t in model_temps:
+        total += norm_cdf((cap - t) / bandwidth) - norm_cdf((floor - t) / bandwidth)
+    return total / len(model_temps)
+
+
 def load_env():
     """Load API keys from ~/AI Stuff/keys.env if not in environment."""
     env_path = Path.home() / "AI Stuff" / "keys.env"
@@ -412,8 +432,18 @@ def calculate_edges(ensembles, markets):
                 spread = yes_ask - yes_bid
                 if spread >= 0.50:  # No real market
                     continue
-                if mid <= 0.05 or mid >= 0.95:  # Near-settled — market has intraday info our model lacks
+                if mid <= 0.05 or mid >= 0.93:  # Near-settled — market has intraday info our model lacks
                     continue
+
+                # Skip expired contracts
+                close_time_str = contract.get("close_time", "")
+                if close_time_str:
+                    try:
+                        ct = datetime.fromisoformat(close_time_str.replace("Z", "+00:00"))
+                        if ct < datetime.now(timezone.utc):
+                            continue
+                    except ValueError:
+                        pass
 
                 strike_type = contract["strike_type"]
                 floor = contract.get("floor_strike")
@@ -421,14 +451,22 @@ def calculate_edges(ensembles, markets):
 
                 # Calculate our probability for this contract
                 if strike_type == "less" and cap is not None:
-                    # P(temp < cap)
+                    # P(temp < cap) — gaussian CDF works well for cumulative
                     our_prob = norm_cdf((cap - mean) / std)
                 elif strike_type == "greater" and floor is not None:
-                    # P(temp > floor)
+                    # P(temp > floor) — gaussian CDF works well for cumulative
                     our_prob = 1 - norm_cdf((floor - mean) / std)
                 elif strike_type == "between" and floor is not None and cap is not None:
-                    # P(floor <= temp < cap)
-                    our_prob = norm_cdf((cap - mean) / std) - norm_cdf((floor - mean) / std)
+                    # P(floor <= temp < cap) — use KDE from individual models
+                    # Gaussian mean/std is too blunt for narrow 2-degree buckets:
+                    # with sigma=3.5, ANY bucket maxes at ~23% probability.
+                    # KDE respects model clustering (5/7 models at 57F → high bucket prob).
+                    models_key = f"{mtype}_models"
+                    model_temps = list(ensemble.get(models_key, {}).values())
+                    if model_temps:
+                        our_prob = model_kde_prob(model_temps, floor, cap)
+                    else:
+                        our_prob = norm_cdf((cap - mean) / std) - norm_cdf((floor - mean) / std)
                 else:
                     continue
 

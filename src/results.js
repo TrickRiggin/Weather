@@ -1,21 +1,21 @@
 export const RESULTS = {
   "summary": {
-    "total": 0,
+    "total": 1,
     "wins": 0,
-    "losses": 0,
-    "win_rate": 0,
-    "total_pnl": 0,
-    "total_risked": 0,
-    "roi": 0,
-    "current_streak": 0
+    "losses": 1,
+    "win_rate": 0.0,
+    "total_pnl": -0.09,
+    "total_risked": 0.09,
+    "roi": -100.0,
+    "current_streak": -1
   },
   "tiers": [
     {
       "label": "STRONG",
       "desc": "20%+ edge",
-      "total": 0,
+      "total": 1,
       "wins": 0,
-      "pnl": 0
+      "pnl": -0.09
     },
     {
       "label": "SOLID",
@@ -41,10 +41,26 @@ export const RESULTS = {
     },
     {
       "label": "NO",
-      "total": 0,
+      "total": 1,
       "wins": 0,
-      "pnl": 0
+      "pnl": -0.09
     }
   ],
-  "picks": []
+  "picks": [
+    [
+      "2026-04-08T12:28:32Z",
+      "LAX",
+      "2026-04-07",
+      "low",
+      "57-58",
+      "NO",
+      -0.8118,
+      0.1082,
+      0.92,
+      57.2,
+      "LOSS",
+      0.09,
+      -0.09
+    ]
+  ]
 };
