@@ -182,7 +182,7 @@ function App() {
                           </span>
                         </div>
                         <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>
-                          {e.type === "high" ? "High" : "Low"} temp {e.strike_type === "greater" ? ">" : e.strike_type === "less" ? "<" : ""} {e.threshold}F
+                          {e.type === "high" ? "High" : "Low"} temp {e.strike_type === "greater" ? "> " : e.strike_type === "less" ? "< " : ""}{e.threshold}F
                         </div>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                           <div>
@@ -205,6 +205,40 @@ function App() {
                       </div>
                     );
                   })}
+                </div>
+              </div>
+            )}
+
+            {/* AI Analysis */}
+            {AI_ANALYSIS && Object.keys(AI_ANALYSIS).length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>
+                  AI Analysis
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(400px, 1fr))", gap: 10 }}>
+                  {Object.entries(AI_ANALYSIS).map(([model, data]) => (
+                    <div key={model} style={{ background: "#0f172a", borderRadius: 10, padding: "14px 16px", border: "1px solid #1e293b" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: model === "claude" ? "#a78bfa" : "#22c55e", textTransform: "uppercase" }}>{model}</span>
+                        {data.picks && <span style={{ fontSize: 10, color: "#64748b" }}>{data.picks.length} picks</span>}
+                      </div>
+                      {data.summary && <p style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.5, marginBottom: 8 }}>{data.summary}</p>}
+                      {data.picks?.map((pick, i) => (
+                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", borderTop: "1px solid #1e293b" }}>
+                          <span style={{ fontSize: 11, color: "#e2e8f0" }}>
+                            {pick.city} {pick.type} {pick.threshold}F
+                          </span>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ fontSize: 10, fontWeight: 800, padding: "1px 6px", borderRadius: 4,
+                              background: pick.confidence === "STRONG" ? "#22c55e" : pick.confidence === "LEAN" ? "#3b82f6" : "#64748b",
+                              color: "#fff" }}>{pick.confidence}</span>
+                            <span style={{ fontSize: 10, fontWeight: 800, padding: "1px 6px", borderRadius: 4,
+                              background: pick.signal === "YES" ? "#22c55e" : "#ef4444", color: "#fff" }}>{pick.signal}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -369,7 +403,7 @@ function App() {
                         <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: i < cityEdges.length - 1 ? "1px solid #1e293b" : "none" }}>
                           <div>
                             <span style={{ fontSize: 12, fontWeight: 600, color: "#f1f5f9" }}>
-                              {e.type === "high" ? "High" : "Low"} {e.strike_type === "greater" ? ">" : e.strike_type === "less" ? "<" : ""} {e.threshold}F
+                              {e.type === "high" ? "High" : "Low"} {e.strike_type === "greater" ? "> " : e.strike_type === "less" ? "< " : ""}{e.threshold}F
                             </span>
                             <span style={{ fontSize: 11, color: "#64748b", marginLeft: 8 }}>{e.date?.slice(5)}</span>
                           </div>

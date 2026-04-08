@@ -8,6 +8,7 @@ Kalshi weather market pricing to find edges.
 import json, os, sys, time, math, requests
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 # ============================================================
 #  CONSTANTS
@@ -200,10 +201,10 @@ def build_ensemble(forecasts):
                 continue
 
             high_mean = sum(highs) / len(highs)
-            high_std = max((sum((h - high_mean)**2 for h in highs) / len(highs)) ** 0.5, SIGMA_FLOOR)
+            high_std = max((sum((h - high_mean)**2 for h in highs) / (len(highs) - 1)) ** 0.5, SIGMA_FLOOR) if len(highs) > 1 else SIGMA_FLOOR
 
             low_mean = sum(lows) / len(lows) if lows else None
-            low_std = max((sum((l - low_mean)**2 for l in lows) / len(lows)) ** 0.5, SIGMA_FLOOR) if lows and len(lows) >= 2 else SIGMA_FLOOR
+            low_std = max((sum((l - low_mean)**2 for l in lows) / (len(lows) - 1)) ** 0.5, SIGMA_FLOOR) if lows and len(lows) > 1 else SIGMA_FLOOR
 
             # Per-model breakdown for UI
             model_highs = {m: d["high"] for m, d in models.items() if d.get("high") is not None}
@@ -400,21 +401,18 @@ def calculate_edges(ensembles, markets):
             if mean is None or std is None:
                 continue
 
-            # Check if this event has healthy liquidity (at least 3 contracts with real mids)
-            real_mids = sum(1 for c in market_data["contracts"]
-                           if c.get("mid") is not None and 0.01 < c["mid"] < 0.99)
-            is_settled = real_mids < 2  # Likely settled or dead market
-
             for contract in market_data["contracts"]:
                 mid = contract.get("mid")
                 if mid is None:
                     continue
 
-                # Skip dead/settled contracts (bid=0 ask=0.01 or bid=0.99 ask=1.0)
+                # Skip dead contracts: no real bid/ask spread, or pinned at extremes
                 yes_bid = contract.get("yes_bid") or 0
                 yes_ask = contract.get("yes_ask") or 0
                 spread = yes_ask - yes_bid
-                if mid <= 0.01 or mid >= 0.99 or spread >= 0.5:
+                if spread >= 0.50:  # No real market
+                    continue
+                if mid <= 0.005 or mid >= 0.995:  # Fully resolved
                     continue
 
                 strike_type = contract["strike_type"]
@@ -438,7 +436,7 @@ def calculate_edges(ensembles, markets):
                 edge = round(our_prob - mid, 4)
 
                 # Signal: YES if our prob > market (underpriced), NO if our prob < market (overpriced)
-                if abs(edge) >= EDGE_THRESHOLD and not is_settled:
+                if abs(edge) >= EDGE_THRESHOLD:
                     signal = "YES" if edge > 0 else "NO"
                 else:
                     signal = None
@@ -555,16 +553,9 @@ def calculate_pace(forecasts, observations):
     now_utc = datetime.now(timezone.utc)
     pace_data = {}
 
-    # UTC offsets for our city timezones (hardcoded to avoid pytz dependency)
-    TZ_OFFSETS = {
-        "America/New_York": -4, "America/Chicago": -5, "America/Denver": -6,
-        "America/Los_Angeles": -7, "America/Phoenix": -7,
-    }
-
     for city_code, obs in observations.items():
         city_tz = CITIES.get(city_code, {}).get("tz", "America/New_York")
-        utc_offset = TZ_OFFSETS.get(city_tz, -5)
-        local_now = now_utc + timedelta(hours=utc_offset)
+        local_now = now_utc.astimezone(ZoneInfo(city_tz))
         today_str = local_now.strftime("%Y-%m-%d")
 
         city_forecasts = forecasts.get(city_code, {}).get(today_str, {})
@@ -815,19 +806,17 @@ def main():
     # 2. Build ensemble distributions
     ensembles = build_ensemble(forecasts)
 
-    # 3. Fetch Kalshi markets
-    markets = fetch_kalshi_markets()
-
-    # 4. Calculate edges
-    edges = calculate_edges(ensembles, markets)
-
-    # 5. Fetch current observations
+    # 3. Fetch current observations + pace (before edges so pace can feed in)
     observations = fetch_observations()
-
-    # 6. Calculate pace
     pace_data = calculate_pace(forecasts, observations)
 
-    # 7. AI analysis (optional)
+    # 4. Fetch Kalshi markets
+    markets = fetch_kalshi_markets()
+
+    # 5. Calculate edges
+    edges = calculate_edges(ensembles, markets)
+
+    # 6. AI analysis (optional)
     ai_results = {}
     if not skip_ai:
         ai_results = ai_analysis(edges, ensembles, pace_data, observations)
