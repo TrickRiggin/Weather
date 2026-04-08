@@ -20,6 +20,12 @@ const MODEL_LABELS = {
   ncep_nbm_conus: "NBM",
 };
 
+const MODEL_COLORS = {
+  gfs_seamless: "#ef4444", ecmwf_ifs025: "#22c55e", icon_seamless: "#3b82f6",
+  gem_seamless: "#f59e0b", jma_seamless: "#a78bfa", ncep_hrrr_conus: "#06b6d4",
+  ncep_nbm_conus: "#f97316",
+};
+
 // ========== HELPERS ==========
 const pct = (v, digits = 0) => v != null ? `${(v * 100).toFixed(digits)}%` : "—";
 const signPct = (v) => v != null ? `${v > 0 ? "+" : ""}${(v * 100).toFixed(1)}%` : "—";
@@ -299,14 +305,17 @@ function App() {
               {cityList.map(c => {
                 const isSelected = selectedCity === c;
                 const obs = OBSERVATIONS?.[c] || {};
+                const citySignals = (EDGES || []).filter(e => e.city === c && e.signal).length;
                 return (
                   <div key={c} onClick={() => setSelectedCity(isSelected ? null : c)}
                     style={{ padding: "8px 14px", borderRadius: 10, cursor: "pointer", transition: "all 0.2s",
                       background: isSelected ? "rgba(59,130,246,0.15)" : "#0f172a",
                       border: isSelected ? "1px solid rgba(59,130,246,0.4)" : "1px solid #1e293b",
                       color: isSelected ? "#3b82f6" : "#94a3b8" }}>
-                    <div style={{ fontSize: 12, fontWeight: 700 }}>{c}</div>
-                    {obs.temp_f && <div style={{ fontSize: 10, color: "#64748b" }}>{obs.temp_f}F</div>}
+                    <div style={{ fontSize: 12, fontWeight: 700 }}>{c}
+                      {citySignals > 0 && <span style={{ fontSize: 8, fontWeight: 800, marginLeft: 4, padding: "1px 4px", borderRadius: 6, background: "#22c55e", color: "#000" }}>{citySignals}</span>}
+                    </div>
+                    {obs.temp_f != null && <div style={{ fontSize: 10, color: "#64748b" }}>{obs.temp_f}F</div>}
                   </div>
                 );
               })}
@@ -316,25 +325,59 @@ function App() {
             {selectedCity && (() => {
               const forecast = FORECASTS?.[selectedCity] || {};
               const obs = OBSERVATIONS?.[selectedCity] || {};
-              const cityEdges = (EDGES || []).filter(e => e.city === selectedCity && e.signal)
-                .sort((a, b) => Math.abs(b.edge) - Math.abs(a.edge));
-              // Group edges by date
-              const edgesByDate = {};
-              cityEdges.forEach(e => {
-                if (!edgesByDate[e.date]) edgesByDate[e.date] = [];
-                edgesByDate[e.date].push(e);
-              });
-              // AI picks for this city
-              const cityAiPicks = {};
-              Object.entries(AI_ANALYSIS || {}).forEach(([model, data]) => {
-                (data.picks || []).forEach(p => {
-                  if (p.city === selectedCity) {
-                    if (!cityAiPicks[model]) cityAiPicks[model] = [];
-                    cityAiPicks[model].push(p);
-                  }
-                });
-              });
+              const allCityEdges = (EDGES || []).filter(e => e.city === selectedCity);
               const obsStale = obs.obs_age_min != null && obs.obs_age_min > 90;
+
+              // Helper: build Kalshi URL from contract ticker
+              const kalshiUrl = (ticker) => `https://kalshi.com/markets/${(ticker || "").toLowerCase()}`;
+
+              // Helper: model range bar
+              const ModelRange = ({ models, mean, std, typeColor }) => {
+                if (!models) return null;
+                const temps = Object.values(models);
+                const pad = 3;
+                const lo = Math.min(...temps) - pad;
+                const hi = Math.max(...temps) + pad;
+                const range = hi - lo;
+                const pos = (t) => Math.max(0, Math.min(100, ((t - lo) / range) * 100));
+                return (
+                  <div style={{ marginBottom: 16 }}>
+                    {/* Ensemble summary line */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                      <span style={{ fontSize: 20, fontWeight: 900, color: typeColor }}>{mean}F</span>
+                      <span style={{ fontSize: 10, color: "#64748b" }}>+/- {std}F  ({Math.min(...temps).toFixed(0)}-{Math.max(...temps).toFixed(0)})</span>
+                    </div>
+                    {/* Range bar */}
+                    <div style={{ position: "relative", height: 28, background: "#1e293b", borderRadius: 6, overflow: "hidden" }}>
+                      {/* Ensemble ±1 std band */}
+                      <div style={{ position: "absolute", left: `${pos(mean - std)}%`, width: `${pos(mean + std) - pos(mean - std)}%`, height: "100%", background: `${typeColor}15`, borderRadius: 4 }} />
+                      {/* Ensemble mean line */}
+                      <div style={{ position: "absolute", left: `${pos(mean)}%`, top: 0, width: 2, height: "100%", background: typeColor, zIndex: 2 }} />
+                      {/* Model dots */}
+                      {Object.entries(models).map(([m, t]) => (
+                        <div key={m} title={`${MODEL_LABELS[m]}: ${t}F`}
+                          style={{ position: "absolute", left: `${pos(t)}%`, top: "50%", transform: "translate(-50%, -50%)",
+                            width: 10, height: 10, borderRadius: "50%", background: MODEL_COLORS[m] || "#94a3b8",
+                            border: "1.5px solid #0f172a", zIndex: 3, cursor: "default" }} />
+                      ))}
+                    </div>
+                    {/* Scale + legend */}
+                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
+                      <span style={{ fontSize: 9, color: "#475569" }}>{lo.toFixed(0)}F</span>
+                      <span style={{ fontSize: 9, color: "#475569" }}>{hi.toFixed(0)}F</span>
+                    </div>
+                    {/* Model legend */}
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
+                      {Object.entries(models).map(([m, t]) => (
+                        <span key={m} style={{ fontSize: 9, color: "#64748b", display: "flex", alignItems: "center", gap: 3 }}>
+                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: MODEL_COLORS[m] || "#94a3b8", display: "inline-block" }} />
+                          {MODEL_LABELS[m]} {t}F
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              };
 
               return (
                 <div>
@@ -342,9 +385,7 @@ function App() {
                   <div style={{ background: "#0f172a", borderRadius: 12, padding: "16px 20px", marginBottom: 16, border: "1px solid #1e293b" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
                       <div>
-                        <h2 style={{ fontFamily: "Outfit", fontSize: 24, fontWeight: 900, color: "#f1f5f9", margin: 0 }}>
-                          {CITY_NAMES[selectedCity]}
-                        </h2>
+                        <h2 style={{ fontFamily: "Outfit", fontSize: 24, fontWeight: 900, color: "#f1f5f9", margin: 0 }}>{CITY_NAMES[selectedCity]}</h2>
                         <span style={{ fontSize: 11, color: "#64748b" }}>{selectedCity}</span>
                       </div>
                       {obs.temp_f != null && (
@@ -352,191 +393,124 @@ function App() {
                           <div style={{ fontSize: 28, fontWeight: 900, color: obsStale ? "#f59e0b" : "#3b82f6" }}>{obs.temp_f}F</div>
                           <div style={{ fontSize: 10, color: obsStale ? "#f59e0b" : "#64748b" }}>
                             {obsStale ? `${Math.round(obs.obs_age_min / 60)}h ago` : "Current"} {obs.station && `(${obs.station})`}
-                            {obsStale && " ⚠ STALE"}
+                            {obsStale && " — STALE"}
                           </div>
                         </div>
                       )}
                     </div>
-
-                    {/* Pace */}
                     {obs.pace_delta != null && !obsStale && (
-                      <div style={{ marginTop: 12, padding: "8px 12px", borderRadius: 8, background: obs.pace_delta > 1 ? "rgba(239,68,68,0.1)" : obs.pace_delta < -1 ? "rgba(59,130,246,0.1)" : "rgba(100,116,139,0.1)", border: `1px solid ${obs.pace_delta > 1 ? "#ef444433" : obs.pace_delta < -1 ? "#3b82f633" : "#33415533"}` }}>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: obs.pace_delta > 0 ? "#ef4444" : "#3b82f6" }}>
+                      <div style={{ marginTop: 10, padding: "6px 12px", borderRadius: 6, background: obs.pace_delta > 1 ? "rgba(239,68,68,0.08)" : obs.pace_delta < -1 ? "rgba(59,130,246,0.08)" : "rgba(100,116,139,0.08)" }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: obs.pace_delta > 0 ? "#ef4444" : obs.pace_delta < -1 ? "#3b82f6" : "#64748b" }}>
                           {obs.pace_delta > 0 ? "+" : ""}{obs.pace_delta}F {obs.pace_delta > 1 ? "RUNNING HOT" : obs.pace_delta < -1 ? "RUNNING COLD" : "ON PACE"}
                         </span>
-                        <span style={{ fontSize: 11, color: "#64748b", marginLeft: 8 }}>
-                          vs HRRR expected {obs.expected_now}F at this hour
-                        </span>
+                        <span style={{ fontSize: 11, color: "#475569", marginLeft: 8 }}>vs HRRR expected {obs.expected_now}F</span>
                       </div>
                     )}
                   </div>
 
-                  {/* Forecast by date — now with picks and edges inline */}
+                  {/* Per-date cards */}
                   {Object.entries(forecast).map(([date, ens]) => {
-                    const dateEdges = edgesByDate[date] || [];
-                    const topPick = dateEdges[0]; // Already sorted by |edge|
-                    const topBadge = topPick ? getConfidenceBadge(topPick.edge) : null;
+                    const dateEdges = allCityEdges.filter(e => e.date === date).sort((a, b) => {
+                      // Sort: less first (ascending threshold), then between (ascending), then greater (descending)
+                      const order = { less: 0, between: 1, greater: 2 };
+                      if ((order[a.strike_type] || 1) !== (order[b.strike_type] || 1)) return (order[a.strike_type] || 1) - (order[b.strike_type] || 1);
+                      const aThresh = a.cap || a.floor || 0;
+                      const bThresh = b.cap || b.floor || 0;
+                      return aThresh - bThresh;
+                    });
+                    const highEdges = dateEdges.filter(e => e.type === "high");
+                    const lowEdges = dateEdges.filter(e => e.type === "low");
+
+                    // Find the event ticker for Kalshi link (from first edge)
+                    const highEvent = highEdges[0]?.ticker?.replace(/-[^-]+$/, "") || "";
+                    const lowEvent = lowEdges[0]?.ticker?.replace(/-[^-]+$/, "") || "";
 
                     return (
                     <div key={date} style={{ background: "#0f172a", borderRadius: 12, padding: "16px 20px", marginBottom: 12, border: "1px solid #1e293b" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                        <span style={{ fontSize: 14, fontWeight: 700, color: "#f1f5f9" }}>{date}</span>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                        <span style={{ fontSize: 15, fontWeight: 800, color: "#f1f5f9" }}>{date}</span>
                         <span style={{ fontSize: 11, color: "#64748b" }}>{ens.model_count} models</span>
                       </div>
 
-                      {/* High/Low summary */}
-                      <div style={{ display: "flex", gap: 16, marginBottom: 12, flexWrap: "wrap" }}>
-                        <div style={{ flex: 1, minWidth: 140, padding: "10px 14px", borderRadius: 8, background: "rgba(239,68,68,0.06)", border: "1px solid #ef444422" }}>
-                          <div style={{ fontSize: 10, color: "#ef4444", fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>HIGH</div>
-                          <div style={{ fontSize: 22, fontWeight: 900, color: "#ef4444" }}>{ens.high_mean}F</div>
-                          <div style={{ fontSize: 10, color: "#64748b" }}>+/- {ens.high_std}F ({ens.high_min}-{ens.high_max})</div>
+                      {/* HIGH section */}
+                      <div style={{ marginBottom: 20 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                          <span style={{ fontSize: 11, fontWeight: 800, color: "#ef4444", letterSpacing: 2 }}>HIGH</span>
+                          {highEvent && <a href={kalshiUrl(highEvent)} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, fontWeight: 700, color: "#64748b", textDecoration: "none", letterSpacing: 1 }}>KALSHI LIVE &rarr;</a>}
                         </div>
-                        {ens.low_mean && (
-                          <div style={{ flex: 1, minWidth: 140, padding: "10px 14px", borderRadius: 8, background: "rgba(59,130,246,0.06)", border: "1px solid #3b82f622" }}>
-                            <div style={{ fontSize: 10, color: "#3b82f6", fontWeight: 700, letterSpacing: 1, marginBottom: 4 }}>LOW</div>
-                            <div style={{ fontSize: 22, fontWeight: 900, color: "#3b82f6" }}>{ens.low_mean}F</div>
-                            <div style={{ fontSize: 10, color: "#64748b" }}>+/- {ens.low_std}F</div>
+                        <ModelRange models={ens.high_models} mean={ens.high_mean} std={ens.high_std} typeColor="#ef4444" />
+                        {/* Coverage Ladder */}
+                        {highEdges.length > 0 && (
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                            {highEdges.map((e, i) => {
+                              const hasEdge = Math.abs(e.edge) >= (META?.edge_threshold || 0.05);
+                              const edgeVal = e.edge || 0;
+                              const isSignal = e.signal != null;
+                              return (
+                              <a key={i} href={kalshiUrl(e.ticker)} target="_blank" rel="noopener noreferrer"
+                                style={{ flex: "1 1 72px", minWidth: 72, maxWidth: 120, padding: "8px 6px", borderRadius: 8, textAlign: "center", textDecoration: "none",
+                                  background: isSignal ? `${getSignalColor(e.signal)}0d` : "#0a0f1a",
+                                  border: `1px solid ${isSignal ? getSignalColor(e.signal) + "55" : "#1e293b"}` }}>
+                                <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 2 }}>
+                                  {e.strike_type === "less" ? `< ${e.threshold}` : e.strike_type === "greater" ? `> ${e.threshold}` : e.threshold}F
+                                </div>
+                                <div style={{ fontSize: 16, fontWeight: 900, color: "#e2e8f0" }}>{pct(e.our_prob)}</div>
+                                <div style={{ fontSize: 10, color: "#64748b" }}>KSH {pct(e.market_mid)}</div>
+                                {hasEdge && <div style={{ fontSize: 10, fontWeight: 800, color: edgeVal > 0 ? "#22c55e" : "#ef4444", marginTop: 1 }}>
+                                  {edgeVal > 0 ? "+" : ""}{(edgeVal * 100).toFixed(0)}%
+                                </div>}
+                              </a>
+                              );
+                            })}
                           </div>
                         )}
                       </div>
 
-                      {/* TOP PICK for this date */}
-                      {topPick && (
-                        <div style={{ padding: "12px 16px", borderRadius: 10, marginBottom: 12, background: `${getSignalColor(topPick.signal)}08`, border: `1px solid ${getSignalColor(topPick.signal)}33` }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                            <div style={{ fontSize: 10, fontWeight: 700, color: "#64748b", letterSpacing: 2, textTransform: "uppercase" }}>TOP PICK</div>
-                            <span style={{ fontSize: 11, fontWeight: 800, padding: "2px 8px", borderRadius: 4, background: getSignalColor(topPick.signal), color: "#fff" }}>{topPick.signal}</span>
-                          </div>
-                          <div style={{ fontSize: 14, fontWeight: 700, color: "#f1f5f9", marginBottom: 4 }}>
-                            {topPick.type === "high" ? "High" : "Low"} {topPick.strike_type === "greater" ? "> " : topPick.strike_type === "less" ? "< " : ""}{topPick.threshold}F
-                          </div>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 4 }}>
-                            <div>
-                              <span style={{ fontSize: 11, color: "#64748b" }}>Us: </span>
-                              <span style={{ fontSize: 14, fontWeight: 700, color: "#e2e8f0" }}>{pct(topPick.our_prob)}</span>
-                              <span style={{ fontSize: 11, color: "#64748b", margin: "0 4px" }}>vs</span>
-                              <span style={{ fontSize: 14, fontWeight: 700, color: "#e2e8f0" }}>{pct(topPick.market_mid)}</span>
-                              <span style={{ fontSize: 11, color: "#64748b" }}> Mkt</span>
-                            </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                              <span style={{ fontSize: 16, fontWeight: 800, color: getEdgeColor(topPick.edge) }}>{signPct(topPick.edge)}</span>
-                              {topBadge && <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 6px", borderRadius: 4, background: topBadge.bg, color: "#fff" }}>{topBadge.label}</span>}
-                            </div>
-                          </div>
-                          <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>
-                            {topPick.signal === "YES"
-                              ? `Buy YES at ${pct(topPick.yes_ask, 1)} to win ${pct(1 - (topPick.yes_ask || topPick.market_mid), 1)}`
-                              : `Buy NO at ${pct(1 - (topPick.yes_bid || topPick.market_mid), 1)} to win ${pct(topPick.yes_bid || topPick.market_mid, 1)}`
-                            }
-                            <span style={{ marginLeft: 8, color: "#475569" }}>Expires {timeUntil(topPick.close_time)}</span>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* All edges for this date */}
-                      {dateEdges.length > 1 && (
-                        <div style={{ marginBottom: 12 }}>
-                          <div style={{ fontSize: 10, fontWeight: 700, color: "#64748b", letterSpacing: 1, textTransform: "uppercase", marginBottom: 6 }}>
-                            All Signals ({dateEdges.length})
-                          </div>
-                          {dateEdges.slice(1).map((e, i) => {
-                            const badge = getConfidenceBadge(e.edge);
-                            return (
-                            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: i < dateEdges.length - 2 ? "1px solid #1e293b44" : "none" }}>
-                              <div>
-                                <span style={{ fontSize: 10, fontWeight: 800, padding: "1px 6px", borderRadius: 3, marginRight: 6, background: getSignalColor(e.signal), color: "#fff" }}>{e.signal}</span>
-                                <span style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0" }}>
-                                  {e.type === "high" ? "High" : "Low"} {e.strike_type === "greater" ? "> " : e.strike_type === "less" ? "< " : ""}{e.threshold}F
-                                </span>
-                                <span style={{ fontSize: 10, color: "#64748b", marginLeft: 6 }}>
-                                  Us {pct(e.our_prob)} vs {pct(e.market_mid)}
-                                </span>
-                              </div>
-                              <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
-                                <span style={{ fontSize: 12, fontWeight: 800, color: getEdgeColor(e.edge) }}>{signPct(e.edge)}</span>
-                                {badge && <span style={{ fontSize: 8, fontWeight: 800, padding: "1px 5px", borderRadius: 3, background: badge.bg, color: "#fff" }}>{badge.label}</span>}
-                              </div>
-                            </div>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                      {/* Model breakdown */}
-                      {ens.high_models && (
-                        <div style={{ marginBottom: 8 }}>
-                          <div style={{ fontSize: 10, color: "#64748b", fontWeight: 700, letterSpacing: 1, marginBottom: 6, textTransform: "uppercase" }}>Model Breakdown (High)</div>
-                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                            {Object.entries(ens.high_models).map(([model, temp]) => {
-                              const diff = temp - ens.high_mean;
-                              return (
-                                <div key={model} style={{ padding: "4px 10px", borderRadius: 6, background: "#1e293b", fontSize: 11, display: "flex", gap: 6, alignItems: "center" }}>
-                                  <span style={{ fontWeight: 700, color: "#94a3b8" }}>{MODEL_LABELS[model] || model}</span>
-                                  <span style={{ fontWeight: 800, color: "#f1f5f9" }}>{temp}F</span>
-                                  <span style={{ fontSize: 9, color: diff > 1 ? "#ef4444" : diff < -1 ? "#3b82f6" : "#64748b" }}>
-                                    {diff > 0 ? "+" : ""}{diff.toFixed(1)}
-                                  </span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                      {ens.low_models && (
+                      {/* LOW section */}
+                      {ens.low_mean && (
                         <div>
-                          <div style={{ fontSize: 10, color: "#64748b", fontWeight: 700, letterSpacing: 1, marginBottom: 6, textTransform: "uppercase" }}>Model Breakdown (Low)</div>
-                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                            {Object.entries(ens.low_models).map(([model, temp]) => {
-                              const diff = temp - ens.low_mean;
-                              return (
-                                <div key={model} style={{ padding: "4px 10px", borderRadius: 6, background: "#1e293b", fontSize: 11, display: "flex", gap: 6, alignItems: "center" }}>
-                                  <span style={{ fontWeight: 700, color: "#94a3b8" }}>{MODEL_LABELS[model] || model}</span>
-                                  <span style={{ fontWeight: 800, color: "#f1f5f9" }}>{temp}F</span>
-                                  <span style={{ fontSize: 9, color: diff > 1 ? "#ef4444" : diff < -1 ? "#3b82f6" : "#64748b" }}>
-                                    {diff > 0 ? "+" : ""}{diff.toFixed(1)}
-                                  </span>
-                                </div>
-                              );
-                            })}
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                            <span style={{ fontSize: 11, fontWeight: 800, color: "#3b82f6", letterSpacing: 2 }}>LOW</span>
+                            {lowEvent && <a href={kalshiUrl(lowEvent)} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, fontWeight: 700, color: "#64748b", textDecoration: "none", letterSpacing: 1 }}>KALSHI LIVE &rarr;</a>}
                           </div>
+                          <ModelRange models={ens.low_models} mean={ens.low_mean} std={ens.low_std} typeColor="#3b82f6" />
+                          {/* Coverage Ladder */}
+                          {lowEdges.length > 0 && (
+                            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                              {lowEdges.map((e, i) => {
+                                const hasEdge = Math.abs(e.edge) >= (META?.edge_threshold || 0.05);
+                                const edgeVal = e.edge || 0;
+                                const isSignal = e.signal != null;
+                                return (
+                                <a key={i} href={kalshiUrl(e.ticker)} target="_blank" rel="noopener noreferrer"
+                                  style={{ flex: "1 1 72px", minWidth: 72, maxWidth: 120, padding: "8px 6px", borderRadius: 8, textAlign: "center", textDecoration: "none",
+                                    background: isSignal ? `${getSignalColor(e.signal)}0d` : "#0a0f1a",
+                                    border: `1px solid ${isSignal ? getSignalColor(e.signal) + "55" : "#1e293b"}` }}>
+                                  <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 2 }}>
+                                    {e.strike_type === "less" ? `< ${e.threshold}` : e.strike_type === "greater" ? `> ${e.threshold}` : e.threshold}F
+                                  </div>
+                                  <div style={{ fontSize: 16, fontWeight: 900, color: "#e2e8f0" }}>{pct(e.our_prob)}</div>
+                                  <div style={{ fontSize: 10, color: "#64748b" }}>KSH {pct(e.market_mid)}</div>
+                                  {hasEdge && <div style={{ fontSize: 10, fontWeight: 800, color: edgeVal > 0 ? "#22c55e" : "#ef4444", marginTop: 1 }}>
+                                    {edgeVal > 0 ? "+" : ""}{(edgeVal * 100).toFixed(0)}%
+                                  </div>}
+                                </a>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
                     );
                   })}
-
-                  {/* AI Analysis for this city */}
-                  {Object.keys(cityAiPicks).length > 0 && (
-                    <div style={{ background: "#0f172a", borderRadius: 12, padding: "16px 20px", marginBottom: 12, border: "1px solid #1e293b" }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: "#64748b", letterSpacing: 2, textTransform: "uppercase", marginBottom: 10 }}>
-                        AI Picks for {CITY_NAMES[selectedCity]}
-                      </div>
-                      {Object.entries(cityAiPicks).map(([model, picks]) => (
-                        <div key={model} style={{ marginBottom: 8 }}>
-                          <span style={{ fontSize: 11, fontWeight: 800, color: model === "claude" ? "#a78bfa" : "#22c55e", textTransform: "uppercase" }}>{model}</span>
-                          {picks.map((pick, i) => (
-                            <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid #1e293b33" }}>
-                              <div style={{ fontSize: 12, color: "#e2e8f0" }}>
-                                {pick.type} {String(pick.threshold).replace(/F$/i, "")}F — <span style={{ color: "#94a3b8", fontStyle: "italic", fontSize: 11 }}>{pick.reasoning}</span>
-                              </div>
-                              <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-                                <span style={{ fontSize: 9, fontWeight: 800, padding: "1px 6px", borderRadius: 4, background: pick.confidence === "STRONG" ? "#22c55e" : pick.confidence === "LEAN" ? "#3b82f6" : "#f59e0b", color: "#fff" }}>{pick.confidence}</span>
-                                <span style={{ fontSize: 9, fontWeight: 800, padding: "1px 6px", borderRadius: 4, background: getSignalColor(pick.signal), color: "#fff" }}>{pick.signal}</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
               );
             })()}
 
-            {/* No city selected */}
             {!selectedCity && (
               <div style={{ textAlign: "center", padding: 40, color: "#475569" }}>
-                Select a city above to view forecasts and edges
+                Select a city above to view forecasts and markets
               </div>
             )}
           </div>
