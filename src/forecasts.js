@@ -28,7 +28,7 @@ export const FORECASTS = {
       "model_count": 7
     },
     "2026-04-09": {
-      "high_mean": 47.8,
+      "high_mean": 47.7,
       "high_std": 3.5,
       "high_min": 43.6,
       "high_max": 50.0,
@@ -39,10 +39,10 @@ export const FORECASTS = {
         "gem_seamless": 50.0,
         "jma_seamless": 43.6,
         "ncep_hrrr_conus": 47.4,
-        "ncep_nbm_conus": 48.5
+        "ncep_nbm_conus": 48.1
       },
       "low_mean": 33.8,
-      "low_std": 3.86,
+      "low_std": 3.91,
       "low_models": {
         "gfs_seamless": 30.0,
         "ecmwf_ifs025": 32.6,
@@ -50,7 +50,7 @@ export const FORECASTS = {
         "gem_seamless": 31.3,
         "jma_seamless": 39.2,
         "ncep_hrrr_conus": 30.0,
-        "ncep_nbm_conus": 38.6
+        "ncep_nbm_conus": 38.8
       },
       "model_count": 7
     },
@@ -67,24 +67,24 @@ export const FORECASTS = {
         "jma_seamless": 53.7,
         "ncep_nbm_conus": 59.5
       },
-      "low_mean": 38.2,
-      "low_std": 4.29,
+      "low_mean": 38.1,
+      "low_std": 4.11,
       "low_models": {
         "gfs_seamless": 39.3,
         "ecmwf_ifs025": 36.7,
         "icon_seamless": 37.4,
         "gem_seamless": 31.2,
         "jma_seamless": 40.7,
-        "ncep_nbm_conus": 43.9
+        "ncep_nbm_conus": 43.2
       },
       "model_count": 6
     }
   },
   "LAX": {
     "2026-04-08": {
-      "high_mean": 72.3,
-      "high_std": 4.67,
-      "high_min": 69.0,
+      "high_mean": 72.2,
+      "high_std": 4.73,
+      "high_min": 68.5,
       "high_max": 82.3,
       "high_models": {
         "gfs_seamless": 70.9,
@@ -93,10 +93,10 @@ export const FORECASTS = {
         "gem_seamless": 73.6,
         "jma_seamless": 70.0,
         "ncep_hrrr_conus": 70.9,
-        "ncep_nbm_conus": 69.0
+        "ncep_nbm_conus": 68.5
       },
-      "low_mean": 55.6,
-      "low_std": 4.54,
+      "low_mean": 55.5,
+      "low_std": 4.51,
       "low_models": {
         "gfs_seamless": 55.2,
         "ecmwf_ifs025": 58.7,
@@ -104,13 +104,13 @@ export const FORECASTS = {
         "gem_seamless": 46.3,
         "jma_seamless": 60.5,
         "ncep_hrrr_conus": 55.2,
-        "ncep_nbm_conus": 57.3
+        "ncep_nbm_conus": 56.9
       },
       "model_count": 7
     },
     "2026-04-09": {
       "high_mean": 72.5,
-      "high_std": 4.39,
+      "high_std": 4.38,
       "high_min": 67.8,
       "high_max": 81.1,
       "high_models": {
@@ -120,7 +120,7 @@ export const FORECASTS = {
         "gem_seamless": 75.3,
         "jma_seamless": 67.8,
         "ncep_hrrr_conus": 70.7,
-        "ncep_nbm_conus": 70.4
+        "ncep_nbm_conus": 70.5
       },
       "low_mean": 57.7,
       "low_std": 3.89,
@@ -131,7 +131,7 @@ export const FORECASTS = {
         "gem_seamless": 51.9,
         "jma_seamless": 62.1,
         "ncep_hrrr_conus": 54.8,
-        "ncep_nbm_conus": 59.0
+        "ncep_nbm_conus": 59.1
       },
       "model_count": 7
     },
@@ -156,7 +156,7 @@ export const FORECASTS = {
         "icon_seamless": 60.8,
         "gem_seamless": 51.6,
         "jma_seamless": 61.1,
-        "ncep_nbm_conus": 58.6
+        "ncep_nbm_conus": 58.4
       },
       "model_count": 6
     }
@@ -164,7 +164,7 @@ export const FORECASTS = {
   "CHI": {
     "2026-04-08": {
       "high_mean": 64.1,
-      "high_std": 4.51,
+      "high_std": 4.5,
       "high_min": 56.6,
       "high_max": 69.0,
       "high_models": {
@@ -174,7 +174,7 @@ export const FORECASTS = {
         "gem_seamless": 69.0,
         "jma_seamless": 56.6,
         "ncep_hrrr_conus": 67.9,
-        "ncep_nbm_conus": 61.3
+        "ncep_nbm_conus": 61.4
       },
       "low_mean": 34.4,
       "low_std": 3.5,
@@ -191,7 +191,7 @@ export const FORECASTS = {
     },
     "2026-04-09": {
       "high_mean": 65.9,
-      "high_std": 5.72,
+      "high_std": 5.71,
       "high_min": 55.6,
       "high_max": 72.9,
       "high_models": {
@@ -201,10 +201,10 @@ export const FORECASTS = {
         "gem_seamless": 72.9,
         "jma_seamless": 55.6,
         "ncep_hrrr_conus": 69.3,
-        "ncep_nbm_conus": 62.2
+        "ncep_nbm_conus": 62.3
       },
       "low_mean": 45.7,
-      "low_std": 4.78,
+      "low_std": 4.8,
       "low_models": {
         "gfs_seamless": 42.5,
         "ecmwf_ifs025": 50.1,
@@ -212,7 +212,7 @@ export const FORECASTS = {
         "gem_seamless": 44.3,
         "jma_seamless": 40.7,
         "ncep_hrrr_conus": 41.1,
-        "ncep_nbm_conus": 47.9
+        "ncep_nbm_conus": 48.1
       },
       "model_count": 7
     },
@@ -227,7 +227,7 @@ export const FORECASTS = {
         "icon_seamless": 51.3,
         "gem_seamless": 46.4,
         "jma_seamless": 38.6,
-        "ncep_nbm_conus": 46.8
+        "ncep_nbm_conus": 47.1
       },
       "low_mean": 38.8,
       "low_std": 3.5,
@@ -282,7 +282,7 @@ export const FORECASTS = {
         "gem_seamless": 75.1,
         "jma_seamless": 74.2,
         "ncep_hrrr_conus": 78.1,
-        "ncep_nbm_conus": 75.8
+        "ncep_nbm_conus": 75.7
       },
       "low_mean": 69.8,
       "low_std": 3.5,
@@ -293,7 +293,7 @@ export const FORECASTS = {
         "gem_seamless": 70.5,
         "jma_seamless": 71.7,
         "ncep_hrrr_conus": 67.3,
-        "ncep_nbm_conus": 71.1
+        "ncep_nbm_conus": 71.0
       },
       "model_count": 7
     },
@@ -310,7 +310,7 @@ export const FORECASTS = {
         "jma_seamless": 74.4,
         "ncep_nbm_conus": 77.2
       },
-      "low_mean": 71.8,
+      "low_mean": 71.9,
       "low_std": 3.5,
       "low_models": {
         "gfs_seamless": 72.0,
@@ -318,17 +318,17 @@ export const FORECASTS = {
         "icon_seamless": 71.8,
         "gem_seamless": 70.9,
         "jma_seamless": 73.6,
-        "ncep_nbm_conus": 71.2
+        "ncep_nbm_conus": 71.6
       },
       "model_count": 6
     }
   },
   "DAL": {
     "2026-04-08": {
-      "high_mean": 77.0,
+      "high_mean": 76.9,
       "high_std": 3.5,
       "high_min": 73.8,
-      "high_max": 79.1,
+      "high_max": 78.5,
       "high_models": {
         "gfs_seamless": 78.5,
         "ecmwf_ifs025": 73.8,
@@ -336,7 +336,7 @@ export const FORECASTS = {
         "gem_seamless": 77.8,
         "jma_seamless": 74.0,
         "ncep_hrrr_conus": 78.5,
-        "ncep_nbm_conus": 79.1
+        "ncep_nbm_conus": 78.5
       },
       "low_mean": 56.1,
       "low_std": 3.5,
@@ -363,9 +363,9 @@ export const FORECASTS = {
         "gem_seamless": 81.3,
         "jma_seamless": 75.7,
         "ncep_hrrr_conus": 79.7,
-        "ncep_nbm_conus": 80.9
+        "ncep_nbm_conus": 81.0
       },
-      "low_mean": 59.8,
+      "low_mean": 59.7,
       "low_std": 3.5,
       "low_models": {
         "gfs_seamless": 59.6,
@@ -374,7 +374,7 @@ export const FORECASTS = {
         "gem_seamless": 60.3,
         "jma_seamless": 59.9,
         "ncep_hrrr_conus": 59.6,
-        "ncep_nbm_conus": 60.4
+        "ncep_nbm_conus": 60.1
       },
       "model_count": 7
     },
@@ -391,7 +391,7 @@ export const FORECASTS = {
         "jma_seamless": 75.6,
         "ncep_nbm_conus": 80.1
       },
-      "low_mean": 64.3,
+      "low_mean": 64.2,
       "low_std": 3.5,
       "low_models": {
         "gfs_seamless": 63.9,
@@ -399,7 +399,7 @@ export const FORECASTS = {
         "icon_seamless": 63.5,
         "gem_seamless": 66.6,
         "jma_seamless": 65.6,
-        "ncep_nbm_conus": 63.6
+        "ncep_nbm_conus": 63.5
       },
       "model_count": 6
     }
@@ -417,7 +417,7 @@ export const FORECASTS = {
         "gem_seamless": 70.4,
         "jma_seamless": 65.9,
         "ncep_hrrr_conus": 73.3,
-        "ncep_nbm_conus": 71.6
+        "ncep_nbm_conus": 71.7
       },
       "low_mean": 48.6,
       "low_std": 3.5,
@@ -433,7 +433,7 @@ export const FORECASTS = {
       "model_count": 7
     },
     "2026-04-09": {
-      "high_mean": 72.7,
+      "high_mean": 72.6,
       "high_std": 3.5,
       "high_min": 67.8,
       "high_max": 74.3,
@@ -444,10 +444,10 @@ export const FORECASTS = {
         "gem_seamless": 73.0,
         "jma_seamless": 67.8,
         "ncep_hrrr_conus": 73.5,
-        "ncep_nbm_conus": 72.9
+        "ncep_nbm_conus": 72.2
       },
       "low_mean": 41.2,
-      "low_std": 4.07,
+      "low_std": 4.08,
       "low_models": {
         "gfs_seamless": 40.9,
         "ecmwf_ifs025": 44.3,
@@ -455,7 +455,7 @@ export const FORECASTS = {
         "gem_seamless": 33.5,
         "jma_seamless": 46.6,
         "ncep_hrrr_conus": 40.9,
-        "ncep_nbm_conus": 42.0
+        "ncep_nbm_conus": 42.1
       },
       "model_count": 7
     },
@@ -472,7 +472,7 @@ export const FORECASTS = {
         "jma_seamless": 63.5,
         "ncep_nbm_conus": 68.4
       },
-      "low_mean": 42.1,
+      "low_mean": 42.2,
       "low_std": 3.5,
       "low_models": {
         "gfs_seamless": 42.7,
@@ -480,7 +480,7 @@ export const FORECASTS = {
         "icon_seamless": 40.9,
         "gem_seamless": 37.1,
         "jma_seamless": 45.5,
-        "ncep_nbm_conus": 43.4
+        "ncep_nbm_conus": 43.9
       },
       "model_count": 6
     }
@@ -498,7 +498,7 @@ export const FORECASTS = {
         "gem_seamless": 54.9,
         "jma_seamless": 49.0,
         "ncep_hrrr_conus": 54.1,
-        "ncep_nbm_conus": 53.8
+        "ncep_nbm_conus": 53.9
       },
       "low_mean": 30.8,
       "low_std": 3.5,
@@ -514,7 +514,7 @@ export const FORECASTS = {
       "model_count": 7
     },
     "2026-04-09": {
-      "high_mean": 58.2,
+      "high_mean": 58.3,
       "high_std": 3.5,
       "high_min": 56.3,
       "high_max": 64.5,
@@ -525,7 +525,7 @@ export const FORECASTS = {
         "gem_seamless": 64.5,
         "jma_seamless": 56.3,
         "ncep_hrrr_conus": 57.1,
-        "ncep_nbm_conus": 59.2
+        "ncep_nbm_conus": 59.3
       },
       "low_mean": 32.1,
       "low_std": 3.5,
@@ -536,7 +536,7 @@ export const FORECASTS = {
         "gem_seamless": 28.3,
         "jma_seamless": 34.5,
         "ncep_hrrr_conus": 32.0,
-        "ncep_nbm_conus": 34.0
+        "ncep_nbm_conus": 34.2
       },
       "model_count": 7
     },
@@ -553,7 +553,7 @@ export const FORECASTS = {
         "jma_seamless": 65.5,
         "ncep_nbm_conus": 69.3
       },
-      "low_mean": 38.1,
+      "low_mean": 38.0,
       "low_std": 3.5,
       "low_models": {
         "gfs_seamless": 41.3,
@@ -561,7 +561,7 @@ export const FORECASTS = {
         "icon_seamless": 39.2,
         "gem_seamless": 32.2,
         "jma_seamless": 40.0,
-        "ncep_nbm_conus": 39.9
+        "ncep_nbm_conus": 39.3
       },
       "model_count": 6
     }
@@ -598,7 +598,7 @@ export const FORECASTS = {
       "high_mean": 69.4,
       "high_std": 3.5,
       "high_min": 65.8,
-      "high_max": 70.8,
+      "high_max": 70.9,
       "high_models": {
         "gfs_seamless": 70.5,
         "ecmwf_ifs025": 70.7,
@@ -606,7 +606,7 @@ export const FORECASTS = {
         "gem_seamless": 68.5,
         "jma_seamless": 65.8,
         "ncep_hrrr_conus": 70.5,
-        "ncep_nbm_conus": 70.8
+        "ncep_nbm_conus": 70.9
       },
       "low_mean": 46.7,
       "low_std": 3.5,
@@ -617,7 +617,7 @@ export const FORECASTS = {
         "gem_seamless": 46.2,
         "jma_seamless": 48.3,
         "ncep_hrrr_conus": 46.3,
-        "ncep_nbm_conus": 48.1
+        "ncep_nbm_conus": 47.9
       },
       "model_count": 7
     },
@@ -642,14 +642,14 @@ export const FORECASTS = {
         "icon_seamless": 45.9,
         "gem_seamless": 45.5,
         "jma_seamless": 47.5,
-        "ncep_nbm_conus": 49.1
+        "ncep_nbm_conus": 49.0
       },
       "model_count": 6
     }
   },
   "HOU": {
     "2026-04-08": {
-      "high_mean": 79.5,
+      "high_mean": 79.4,
       "high_std": 3.5,
       "high_min": 76.4,
       "high_max": 82.1,
@@ -660,7 +660,7 @@ export const FORECASTS = {
         "gem_seamless": 82.1,
         "jma_seamless": 76.9,
         "ncep_hrrr_conus": 80.2,
-        "ncep_nbm_conus": 80.4
+        "ncep_nbm_conus": 79.8
       },
       "low_mean": 58.7,
       "low_std": 3.5,
@@ -676,7 +676,7 @@ export const FORECASTS = {
       "model_count": 7
     },
     "2026-04-09": {
-      "high_mean": 80.3,
+      "high_mean": 80.4,
       "high_std": 3.5,
       "high_min": 78.3,
       "high_max": 83.7,
@@ -687,7 +687,7 @@ export const FORECASTS = {
         "gem_seamless": 83.7,
         "jma_seamless": 78.3,
         "ncep_hrrr_conus": 81.3,
-        "ncep_nbm_conus": 80.1
+        "ncep_nbm_conus": 80.2
       },
       "low_mean": 61.5,
       "low_std": 3.5,
@@ -698,7 +698,7 @@ export const FORECASTS = {
         "gem_seamless": 60.2,
         "jma_seamless": 62.4,
         "ncep_hrrr_conus": 59.9,
-        "ncep_nbm_conus": 63.2
+        "ncep_nbm_conus": 63.1
       },
       "model_count": 7
     },
@@ -715,7 +715,7 @@ export const FORECASTS = {
         "jma_seamless": 77.3,
         "ncep_nbm_conus": 77.9
       },
-      "low_mean": 66.6,
+      "low_mean": 66.5,
       "low_std": 3.5,
       "low_models": {
         "gfs_seamless": 66.7,
@@ -723,7 +723,7 @@ export const FORECASTS = {
         "icon_seamless": 66.9,
         "gem_seamless": 66.2,
         "jma_seamless": 67.2,
-        "ncep_nbm_conus": 67.8
+        "ncep_nbm_conus": 67.7
       },
       "model_count": 6
     }
@@ -741,10 +741,10 @@ export const FORECASTS = {
         "gem_seamless": 94.3,
         "jma_seamless": 92.5,
         "ncep_hrrr_conus": 96.2,
-        "ncep_nbm_conus": 94.9
+        "ncep_nbm_conus": 95.0
       },
-      "low_mean": 65.7,
-      "low_std": 5.98,
+      "low_mean": 65.8,
+      "low_std": 6.01,
       "low_models": {
         "gfs_seamless": 67.0,
         "ecmwf_ifs025": 69.0,
@@ -752,12 +752,12 @@ export const FORECASTS = {
         "gem_seamless": 52.4,
         "jma_seamless": 66.4,
         "ncep_hrrr_conus": 67.0,
-        "ncep_nbm_conus": 68.9
+        "ncep_nbm_conus": 69.2
       },
       "model_count": 7
     },
     "2026-04-09": {
-      "high_mean": 94.8,
+      "high_mean": 94.7,
       "high_std": 3.5,
       "high_min": 92.2,
       "high_max": 96.4,
@@ -768,10 +768,10 @@ export const FORECASTS = {
         "gem_seamless": 93.7,
         "jma_seamless": 92.2,
         "ncep_hrrr_conus": 96.4,
-        "ncep_nbm_conus": 95.2
+        "ncep_nbm_conus": 94.5
       },
       "low_mean": 65.3,
-      "low_std": 6.68,
+      "low_std": 6.69,
       "low_models": {
         "gfs_seamless": 63.7,
         "ecmwf_ifs025": 71.3,
@@ -779,7 +779,7 @@ export const FORECASTS = {
         "gem_seamless": 51.8,
         "jma_seamless": 67.1,
         "ncep_hrrr_conus": 63.7,
-        "ncep_nbm_conus": 70.2
+        "ncep_nbm_conus": 70.3
       },
       "model_count": 7
     },
@@ -797,14 +797,14 @@ export const FORECASTS = {
         "ncep_nbm_conus": 91.3
       },
       "low_mean": 68.3,
-      "low_std": 8.04,
+      "low_std": 8.02,
       "low_models": {
         "gfs_seamless": 75.7,
         "ecmwf_ifs025": 70.8,
         "icon_seamless": 70.4,
         "gem_seamless": 52.6,
         "jma_seamless": 68.9,
-        "ncep_nbm_conus": 71.6
+        "ncep_nbm_conus": 71.4
       },
       "model_count": 6
     }
