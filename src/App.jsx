@@ -226,7 +226,7 @@ function App() {
                       {data.picks?.map((pick, i) => (
                         <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", borderTop: "1px solid #1e293b" }}>
                           <span style={{ fontSize: 11, color: "#e2e8f0" }}>
-                            {pick.city} {pick.type} {pick.threshold}F
+                            {pick.city} {pick.type} {String(pick.threshold).replace(/F$/i, "")}F
                           </span>
                           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                             <span style={{ fontSize: 10, fontWeight: 800, padding: "1px 6px", borderRadius: 4,
