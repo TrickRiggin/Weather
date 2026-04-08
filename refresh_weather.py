@@ -109,6 +109,11 @@ def fetch_forecasts(cities=CITIES, models=WEATHER_MODELS, forecast_days=3):
         "forecast_days": forecast_days,
     }
 
+    # Add paid API key if available
+    api_key = os.environ.get("OPENMETEO_API_KEY", "")
+    if api_key:
+        params["apikey"] = api_key
+
     try:
         resp = requests.get(OPENMETEO_URL, params=params, timeout=30)
         resp.raise_for_status()
