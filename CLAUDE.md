@@ -9,7 +9,7 @@ Weather market prediction platform. React 19 + Vite frontend, Python data pipeli
 ## Key Files
 - `src/App.jsx` — React frontend (Scanner, Cities, Guide tabs)
 - `refresh_weather.py` — Python pipeline (OpenMeteo, Kalshi, NWS, AI analysis, historical tracking)
-- Auto-generated JS: `markets.js`, `forecasts.js`, `edges.js`, `observations.js`, `ai_analysis.js`, `meta.js`
+- Auto-generated JS: `markets.js`, `forecasts.js`, `edges.js`, `observations.js`, `ai_analysis.js`, `meta.js`, `results.js`
 - `data/signals.jsonl` — Historical edge signal snapshots (append-only)
 - `data/resolutions.jsonl` — Resolved signals with actual temps, WIN/LOSS, P&L
 - `.github/workflows/refresh.yml` — Refresh via cron-job.org repository_dispatch
@@ -67,6 +67,7 @@ signal = YES/NO when |edge| >= 5%
 - Mobile-friendly, same family aesthetic as other AA apps
 - **Scanner tab**: Top signal cards + sortable/filterable market table
 - **Cities tab**: City selector with current temps, 3-day forecast, model breakdown, pace indicator, per-city edges
+- **Results tab**: Track record — hero stats (win rate, record, streak, P&L, ROI), edge tier breakdown with progress bars, YES/NO direction cards, per-pick table with actual temps
 - **Guide tab**: Methodology explanation
 
 ## Important Gotchas

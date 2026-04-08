@@ -1219,6 +1219,89 @@ def write_data_files(forecasts, ensembles, markets, edges, observations, pace_da
     _write_js(src_dir / "meta.js", "META", meta)
     print(f"  Wrote meta to src/meta.js")
 
+    # ---- results.js ----
+    resolutions_file = DATA_DIR / "resolutions.jsonl"
+    resolutions = []
+    if resolutions_file.exists():
+        for line in resolutions_file.read_text(encoding="utf-8").splitlines():
+            try:
+                resolutions.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+
+    # Sort newest first
+    resolutions.sort(key=lambda r: r.get("resolved_at", ""), reverse=True)
+
+    # Summary stats
+    r_wins = sum(1 for r in resolutions if r["result"] == "WIN")
+    r_total = len(resolutions)
+    r_pnl = sum(r["pnl"] for r in resolutions)
+    r_risked = sum(abs(r["buy_price"]) for r in resolutions)
+
+    # Current streak
+    streak = 0
+    if resolutions:
+        streak_result = resolutions[0]["result"]
+        for r in resolutions:
+            if r["result"] == streak_result:
+                streak += 1
+            else:
+                break
+        if streak_result == "LOSS":
+            streak = -streak
+
+    # Edge tier breakdown
+    tier_defs = [
+        ("STRONG", "20%+ edge", 0.20, 2.0),
+        ("SOLID", "10-20%", 0.10, 0.20),
+        ("LEAN", "5-10%", 0.05, 0.10),
+    ]
+    tiers = []
+    for label, desc, lo, hi in tier_defs:
+        t_picks = [r for r in resolutions if lo <= abs(r["edge"]) < hi]
+        t_wins = sum(1 for r in t_picks if r["result"] == "WIN")
+        t_pnl = sum(r["pnl"] for r in t_picks)
+        tiers.append({"label": label, "desc": desc, "total": len(t_picks),
+                       "wins": t_wins, "pnl": round(t_pnl, 2)})
+
+    # By direction
+    directions = []
+    for d in ["YES", "NO"]:
+        d_picks = [r for r in resolutions if r["signal"] == d]
+        d_wins = sum(1 for r in d_picks if r["result"] == "WIN")
+        d_pnl = sum(r["pnl"] for r in d_picks)
+        directions.append({"label": d, "total": len(d_picks),
+                           "wins": d_wins, "pnl": round(d_pnl, 2)})
+
+    # Picks as compact arrays: [resolved_at, city, date, type, threshold, signal, edge, our_prob, market_mid, actual_temp, result, buy_price, pnl]
+    picks = []
+    for r in resolutions:
+        picks.append([
+            r.get("resolved_at"), r.get("city"), r.get("date"),
+            r.get("type"), r.get("threshold"), r.get("signal"),
+            r.get("edge"), r.get("our_prob"), r.get("market_mid"),
+            r.get("actual_temp"), r.get("result"),
+            r.get("buy_price"), r.get("pnl"),
+        ])
+
+    results_data = {
+        "summary": {
+            "total": r_total,
+            "wins": r_wins,
+            "losses": r_total - r_wins,
+            "win_rate": round(r_wins / r_total, 4) if r_total else 0,
+            "total_pnl": round(r_pnl, 2),
+            "total_risked": round(r_risked, 2),
+            "roi": round(r_pnl / r_risked * 100, 1) if r_risked > 0 else 0,
+            "current_streak": streak,
+        },
+        "tiers": tiers,
+        "directions": directions,
+        "picks": picks,
+    }
+    _write_js(src_dir / "results.js", "RESULTS", results_data)
+    print(f"  Wrote {r_total} results to src/results.js")
+
 
 def _write_js(path, var_name, data):
     """Write a JS export file."""

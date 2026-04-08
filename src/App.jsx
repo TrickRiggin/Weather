@@ -5,6 +5,7 @@ import { MARKETS } from "./markets.js";
 import { OBSERVATIONS } from "./observations.js";
 import { AI_ANALYSIS } from "./ai_analysis.js";
 import { META } from "./meta.js";
+import { RESULTS } from "./results.js";
 
 // ========== CITY CONFIG ==========
 const CITY_NAMES = {
@@ -57,6 +58,7 @@ function App() {
   const [filterCity, setFilterCity] = useState("all");
   const [filterType, setFilterType] = useState("all");
   const [sortBy, setSortBy] = useState("edge");
+  const [resultsView, setResultsView] = useState("last100");
 
   // ========== DERIVED DATA ==========
   const signals = useMemo(() =>
@@ -132,6 +134,10 @@ function App() {
             {signals.length > 0 && <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 6px", borderRadius: 10, background: tab === "scanner" ? "#f59e0b" : "#22c55e", color: "#000" }}>{signals.length}</span>}
           </div>
           <div style={ts("cities")} onClick={() => setTab("cities")}>Cities</div>
+          <div style={ts("results")} onClick={() => setTab("results")}>
+            Results
+            {(RESULTS?.summary?.total || 0) > 0 && <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 6px", borderRadius: 10, background: tab === "results" ? "#f59e0b" : ((RESULTS?.summary?.win_rate || 0) >= 0.55 ? "#22c55e" : "#64748b"), color: tab === "results" ? "#000" : "#fff", marginLeft: 4 }}>{RESULTS.summary.total}</span>}
+          </div>
           <div style={ts("guide")} onClick={() => setTab("guide")}>Guide</div>
         </div>
 
@@ -535,6 +541,184 @@ function App() {
             )}
           </div>
         )}
+
+        {/* ==================== RESULTS TAB ==================== */}
+        {tab === "results" && (() => {
+          const summary = RESULTS?.summary || {};
+          const tiers = RESULTS?.tiers || [];
+          const directions = RESULTS?.directions || [];
+          const allPicks = (RESULTS?.picks || []).map(p => ({
+            resolved_at: p[0], city: p[1], date: p[2], type: p[3],
+            threshold: p[4], signal: p[5], edge: p[6], our_prob: p[7],
+            market_mid: p[8], actual_temp: p[9], result: p[10],
+            buy_price: p[11], pnl: p[12],
+          }));
+          const picks = resultsView === "last100" ? allPicks.slice(0, 100) : allPicks;
+
+          // Recompute summary for "last 100" view
+          const viewSummary = resultsView === "overall" || allPicks.length <= 100 ? summary : (() => {
+            const s = picks;
+            const w = s.filter(p => p.result === "WIN").length;
+            const pnl = s.reduce((a, p) => a + (p.pnl || 0), 0);
+            const risked = s.reduce((a, p) => a + Math.abs(p.buy_price || 0), 0);
+            let streak = 0;
+            if (s.length) {
+              const sr = s[0].result;
+              for (const p of s) { if (p.result === sr) streak++; else break; }
+              if (sr === "LOSS") streak = -streak;
+            }
+            return { total: s.length, wins: w, losses: s.length - w,
+              win_rate: s.length ? w / s.length : 0, total_pnl: pnl,
+              total_risked: risked, roi: risked > 0 ? (pnl / risked * 100) : 0,
+              current_streak: streak };
+          })();
+
+          const streakStr = viewSummary.current_streak > 0 ? `${viewSummary.current_streak}W` : viewSummary.current_streak < 0 ? `${Math.abs(viewSummary.current_streak)}L` : "—";
+          const streakColor = viewSummary.current_streak > 0 ? "#22c55e" : viewSummary.current_streak < 0 ? "#ef4444" : "#64748b";
+          const wrColor = viewSummary.win_rate >= 0.55 ? "#22c55e" : viewSummary.win_rate >= 0.50 ? "#f59e0b" : "#ef4444";
+          const pnlColor = viewSummary.total_pnl >= 0 ? "#22c55e" : "#ef4444";
+
+          return (
+          <div>
+            {/* View toggle */}
+            <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 20 }}>
+              {[["last100", "Last 100"], ["overall", "Overall"]].map(([key, label]) => (
+                <div key={key} onClick={() => setResultsView(key)}
+                  style={{ padding: "6px 16px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 700,
+                    background: resultsView === key ? "rgba(59,130,246,0.15)" : "transparent",
+                    color: resultsView === key ? "#3b82f6" : "#64748b",
+                    border: resultsView === key ? "1px solid rgba(59,130,246,0.3)" : "1px solid transparent" }}>
+                  {label}
+                </div>
+              ))}
+            </div>
+
+            {/* Empty state */}
+            {viewSummary.total === 0 && (
+              <div style={{ textAlign: "center", padding: "60px 20px" }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>&#x1f4ca;</div>
+                <h3 style={{ fontFamily: "Outfit", fontSize: 20, fontWeight: 800, color: "#f1f5f9", marginBottom: 8 }}>No Results Yet</h3>
+                <p style={{ fontSize: 13, color: "#64748b", lineHeight: 1.6, maxWidth: 400, margin: "0 auto" }}>
+                  Picks resolve when markets close — typically early morning UTC the day after the forecast.
+                  First results will appear within 24h of the pipeline going live.
+                </p>
+              </div>
+            )}
+
+            {/* Hero stats */}
+            {viewSummary.total > 0 && (
+              <>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10, marginBottom: 20 }}>
+                  {[
+                    { label: "Win Rate", value: `${(viewSummary.win_rate * 100).toFixed(1)}%`, color: wrColor },
+                    { label: "Record", value: `${viewSummary.wins}-${viewSummary.losses}`, color: "#e2e8f0" },
+                    { label: "Streak", value: streakStr, color: streakColor },
+                    { label: "Total P&L", value: `$${viewSummary.total_pnl >= 0 ? "+" : ""}${viewSummary.total_pnl.toFixed(2)}`, color: pnlColor },
+                    { label: "ROI", value: `${viewSummary.roi >= 0 ? "+" : ""}${viewSummary.roi.toFixed(1)}%`, color: pnlColor },
+                  ].map(s => (
+                    <div key={s.label} style={{ background: "#0f172a", borderRadius: 10, padding: "12px 16px", textAlign: "center", border: "1px solid #1e293b" }}>
+                      <div style={{ fontSize: 22, fontWeight: 900, color: s.color }}>{s.value}</div>
+                      <div style={{ fontSize: 10, color: "#64748b", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginTop: 2 }}>{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Edge Tier Breakdown */}
+                <div style={{ background: "#0f172a", borderRadius: 12, padding: "16px 20px", marginBottom: 12, border: "1px solid #1e293b" }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#64748b", letterSpacing: 2, textTransform: "uppercase", marginBottom: 12 }}>Accuracy by Edge Size</div>
+                  {tiers.filter(t => t.total > 0).map(t => {
+                    const wr = t.total > 0 ? t.wins / t.total : 0;
+                    const tierColor = t.label === "STRONG" ? "#22c55e" : t.label === "SOLID" ? "#f59e0b" : "#3b82f6";
+                    return (
+                      <div key={t.label} style={{ marginBottom: 10 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                          <div>
+                            <span style={{ fontSize: 12, fontWeight: 800, color: tierColor }}>{t.label}</span>
+                            <span style={{ fontSize: 10, color: "#64748b", marginLeft: 6 }}>{t.desc}</span>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{ fontSize: 11, color: "#94a3b8" }}>{t.wins}/{t.total}</span>
+                            <span style={{ fontSize: 12, fontWeight: 800, color: wr >= 0.55 ? "#22c55e" : wr >= 0.50 ? "#f59e0b" : "#ef4444" }}>{(wr * 100).toFixed(0)}%</span>
+                            <span style={{ fontSize: 10, color: t.pnl >= 0 ? "#22c55e" : "#ef4444" }}>${t.pnl >= 0 ? "+" : ""}{t.pnl.toFixed(2)}</span>
+                          </div>
+                        </div>
+                        <div style={{ height: 6, borderRadius: 3, background: "#1e293b", overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${Math.min(wr * 100, 100)}%`, borderRadius: 3, background: tierColor, transition: "width 0.3s" }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* By Direction */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                  {directions.filter(d => d.total > 0).map(d => {
+                    const wr = d.total > 0 ? d.wins / d.total : 0;
+                    const dirColor = d.label === "YES" ? "#22c55e" : "#ef4444";
+                    return (
+                      <div key={d.label} style={{ background: "#0f172a", borderRadius: 10, padding: "12px 16px", border: `1px solid ${dirColor}22` }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                          <span style={{ fontSize: 11, fontWeight: 800, padding: "2px 8px", borderRadius: 4, background: dirColor, color: "#fff" }}>{d.label}</span>
+                          <span style={{ fontSize: 14, fontWeight: 900, color: wr >= 0.55 ? "#22c55e" : wr >= 0.50 ? "#f59e0b" : "#ef4444" }}>{(wr * 100).toFixed(0)}%</span>
+                        </div>
+                        <div style={{ fontSize: 11, color: "#94a3b8" }}>
+                          {d.wins}-{d.total - d.wins} record
+                          <span style={{ marginLeft: 8, color: d.pnl >= 0 ? "#22c55e" : "#ef4444" }}>${d.pnl >= 0 ? "+" : ""}{d.pnl.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Picks Table */}
+                <div style={{ background: "#0f172a", borderRadius: 12, padding: "16px 20px", border: "1px solid #1e293b" }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: "#64748b", letterSpacing: 2, textTransform: "uppercase", marginBottom: 10 }}>
+                    {resultsView === "last100" ? "Last 100 Picks" : "All Picks"} ({picks.length})
+                  </div>
+                  <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ borderBottom: "1px solid #334155" }}>
+                          {["", "Date", "City", "Type", "Threshold", "Signal", "Edge", "Us vs Mkt", "Actual", "P&L"].map(h => (
+                            <th key={h} style={{ padding: "6px 6px", textAlign: "left", color: "#64748b", fontWeight: 700, fontSize: 10, letterSpacing: 0.5, textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {picks.map((p, i) => {
+                          const isWin = p.result === "WIN";
+                          return (
+                          <tr key={i} style={{ borderBottom: "1px solid #1e293b" }}>
+                            <td style={{ padding: "6px 4px", fontSize: 14 }}>{isWin ? "\u2705" : "\u274c"}</td>
+                            <td style={{ padding: "6px 6px", color: "#94a3b8" }}>{p.date?.slice(5)}</td>
+                            <td style={{ padding: "6px 6px", fontWeight: 600, color: "#f1f5f9" }}>{p.city}</td>
+                            <td style={{ padding: "6px 6px" }}>
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 5px", borderRadius: 3, background: p.type === "high" ? "#ef444422" : "#3b82f622", color: p.type === "high" ? "#ef4444" : "#3b82f6" }}>
+                                {p.type === "high" ? "H" : "L"}
+                              </span>
+                            </td>
+                            <td style={{ padding: "6px 6px", fontWeight: 600 }}>{p.threshold}F</td>
+                            <td style={{ padding: "6px 6px" }}>
+                              <span style={{ fontSize: 10, fontWeight: 800, padding: "1px 6px", borderRadius: 3, background: getSignalColor(p.signal), color: "#fff" }}>{p.signal}</span>
+                            </td>
+                            <td style={{ padding: "6px 6px", fontWeight: 800, color: getEdgeColor(p.edge) }}>{signPct(p.edge)}</td>
+                            <td style={{ padding: "6px 6px", color: "#94a3b8", fontSize: 11 }}>{pct(p.our_prob)} vs {pct(p.market_mid)}</td>
+                            <td style={{ padding: "6px 6px", fontWeight: 700, color: "#e2e8f0" }}>{p.actual_temp != null ? `${p.actual_temp}F` : "—"}</td>
+                            <td style={{ padding: "6px 6px", fontWeight: 800, color: (p.pnl || 0) >= 0 ? "#22c55e" : "#ef4444" }}>
+                              {p.pnl != null ? `${p.pnl >= 0 ? "+" : ""}$${p.pnl.toFixed(2)}` : "—"}
+                            </td>
+                          </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          );
+        })()}
 
         {/* ==================== GUIDE TAB ==================== */}
         {tab === "guide" && (
