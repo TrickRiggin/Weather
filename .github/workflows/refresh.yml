@@ -3,6 +3,7 @@ name: Weather Refresh
 on:
   repository_dispatch:
     types: [light-refresh]
+  workflow_dispatch:
 
 concurrency:
   group: weather-refresh
@@ -40,4 +41,5 @@ jobs:
           git add src/ data/
           git diff --cached --quiet && echo "No changes" && exit 0
           git commit -m "Refresh: $(date -u '+%Y-%m-%d %H:%M') UTC"
+          git pull --rebase
           git push

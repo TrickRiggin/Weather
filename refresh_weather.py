@@ -473,8 +473,11 @@ def calculate_edges(ensembles, markets):
                 our_prob = round(our_prob, 4)
                 edge = round(our_prob - mid, 4)
 
-                # Signal: YES if our prob > market (underpriced), NO if our prob < market (overpriced)
-                if abs(edge) >= EDGE_THRESHOLD:
+                # Signal: only on "less"/"greater" contracts where cumulative gaussian works.
+                # "Between" contracts are narrow 2-degree buckets — our model structurally
+                # can't price them (max ~20% for any bucket, even when models cluster there).
+                # Still calculate edge for display, but don't generate actionable signals.
+                if strike_type != "between" and abs(edge) >= EDGE_THRESHOLD:
                     signal = "YES" if edge > 0 else "NO"
                 else:
                     signal = None
