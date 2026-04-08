@@ -28,7 +28,7 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           KALSHI_API_KEY: ${{ secrets.KALSHI_API_KEY }}
           KALSHI_RSA_KEY: ${{ secrets.KALSHI_RSA_KEY }}
-        run: python refresh_weather.py --skip-ai --write-data
+        run: python refresh_weather.py --write-data
 
       - name: Commit and push
         run: |
