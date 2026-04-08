@@ -3,100 +3,100 @@ export const OBSERVATIONS = {
     "temp_f": 35.1,
     "observed_at": "2026-04-08T02:51:00+00:00",
     "station": "KNYC",
-    "pace_delta": 5.4,
-    "expected_now": 29.7,
+    "pace_delta": 0.8,
+    "expected_now": 34.3,
     "observed": 35.1,
-    "hrrr_high": 48.2,
-    "adjusted_high": 53.6
+    "hrrr_high": 55.7,
+    "adjusted_high": 56.5
   },
   "LAX": {
     "temp_f": 62.6,
-    "observed_at": "2026-04-08T03:15:00+00:00",
+    "observed_at": "2026-04-08T03:35:00+00:00",
     "station": "KLAX",
-    "pace_delta": 4.3,
-    "expected_now": 58.3,
+    "pace_delta": 1.0,
+    "expected_now": 61.6,
     "observed": 62.6,
-    "hrrr_high": 70.3,
-    "adjusted_high": 74.6
+    "hrrr_high": 69.5,
+    "adjusted_high": 70.5
   },
   "CHI": {
     "temp_f": 35.6,
-    "observed_at": "2026-04-08T03:10:00+00:00",
+    "observed_at": "2026-04-08T03:35:00+00:00",
     "station": "KMDW",
-    "pace_delta": 2.9,
-    "expected_now": 32.7,
+    "pace_delta": 3.4,
+    "expected_now": 32.2,
     "observed": 35.6,
-    "hrrr_high": 63.7,
-    "adjusted_high": 66.6
+    "hrrr_high": 34.3,
+    "adjusted_high": 37.7
   },
   "MIA": {
     "temp_f": 71.6,
-    "observed_at": "2026-04-08T03:15:00+00:00",
+    "observed_at": "2026-04-08T03:35:00+00:00",
     "station": "KMIA",
-    "pace_delta": 2.0,
-    "expected_now": 69.6,
+    "pace_delta": 2.1,
+    "expected_now": 69.5,
     "observed": 71.6,
-    "hrrr_high": 76.6,
-    "adjusted_high": 78.6
+    "hrrr_high": 80.8,
+    "adjusted_high": 82.9
   },
   "DAL": {
-    "temp_f": 64.4,
-    "observed_at": "2026-04-08T03:10:00+00:00",
+    "temp_f": 62.6,
+    "observed_at": "2026-04-08T03:35:00+00:00",
     "station": "KDFW",
-    "pace_delta": 6.1,
-    "expected_now": 58.3,
-    "observed": 64.4,
-    "hrrr_high": 78.7,
-    "adjusted_high": 84.8
+    "pace_delta": -1.6,
+    "expected_now": 64.2,
+    "observed": 62.6,
+    "hrrr_high": 72.4,
+    "adjusted_high": 70.8
   },
   "DEN": {
-    "temp_f": 62.6,
-    "observed_at": "2026-04-08T03:10:00+00:00",
+    "temp_f": 57.2,
+    "observed_at": "2026-04-08T03:35:00+00:00",
     "station": "KDEN",
-    "pace_delta": 14.5,
-    "expected_now": 48.1,
-    "observed": 62.6,
-    "hrrr_high": 74.3,
-    "adjusted_high": 88.8
+    "pace_delta": -1.3,
+    "expected_now": 58.5,
+    "observed": 57.2,
+    "hrrr_high": 71.3,
+    "adjusted_high": 70.0
   },
   "PHI": {
     "temp_f": 39.2,
-    "observed_at": "2026-04-08T03:15:00+00:00",
+    "observed_at": "2026-04-08T03:35:00+00:00",
     "station": "KPHL",
-    "pace_delta": 5.9,
-    "expected_now": 33.3,
+    "pace_delta": -1.5,
+    "expected_now": 40.7,
     "observed": 39.2,
-    "hrrr_high": 53.4,
-    "adjusted_high": 59.3
+    "hrrr_high": 55.9,
+    "adjusted_high": 54.4
   },
   "ATL": {
-    "temp_f": 62.6,
-    "observed_at": "2026-04-08T03:15:00+00:00",
+    "temp_f": 64.4,
+    "observed_at": "2026-04-08T03:35:00+00:00",
     "station": "KATL",
-    "pace_delta": 8.5,
-    "expected_now": 54.1,
-    "observed": 62.6,
-    "hrrr_high": 69.3,
-    "adjusted_high": 77.8
+    "pace_delta": 3.6,
+    "expected_now": 60.8,
+    "observed": 64.4,
+    "hrrr_high": 76.6,
+    "adjusted_high": 80.2
   },
   "HOU": {
-    "temp_f": 62.6,
-    "observed_at": "2026-04-08T03:10:00+00:00",
+    "temp_f": 60.8,
+    "observed_at": "2026-04-08T03:35:00+00:00",
     "station": "KIAH",
-    "pace_delta": 1.2,
-    "expected_now": 61.4,
-    "observed": 62.6,
-    "hrrr_high": 80.6,
-    "adjusted_high": 81.8
+    "pace_delta": -4.3,
+    "expected_now": 65.1,
+    "observed": 60.8,
+    "hrrr_high": 75.0,
+    "adjusted_high": 70.7
   },
   "PHX": {
     "temp_f": 84.2,
-    "observed_at": "2026-04-08T03:10:00+00:00",
+    "observed_at": "2026-04-08T03:35:00+00:00",
     "station": "KPHX",
-    "pace_delta": 17.4,
-    "expected_now": 66.8,
+    "pace_delta": 3.0,
+    "expected_now": 81.2,
     "observed": 84.2,
-    "hrrr_high": 97.3,
-    "adjusted_high": 114.7
+    "hrrr_high": 91.5,
+    "adjusted_high": 94.5
   }
 };

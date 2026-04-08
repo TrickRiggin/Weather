@@ -43,8 +43,8 @@ CITIES = {
 }
 
 # Minimum sigma floor — even when all models agree, forecast error is never zero
-# Based on typical NWS forecast error for 1-2 day temperature forecasts
-SIGMA_FLOOR = 2.0  # degrees F
+# Based on typical NWS forecast error: ~3.5F for day 1-2, higher for day 3+
+SIGMA_FLOOR = 3.5  # degrees F
 
 # Edge threshold for signals
 EDGE_THRESHOLD = 0.05  # 5% edge minimum
@@ -277,7 +277,7 @@ def fetch_kalshi_markets(cities=CITIES):
                 no_bid = _parse_price(market.get("no_bid_dollars") or market.get("no_bid"))
                 no_ask = _parse_price(market.get("no_ask_dollars") or market.get("no_ask"))
 
-                mid = (yes_bid + yes_ask) / 2 if yes_bid and yes_ask else None
+                mid = (yes_bid + yes_ask) / 2 if yes_bid is not None and yes_ask is not None else None
 
                 contracts.append({
                     "ticker": market.get("ticker", ""),
@@ -400,9 +400,21 @@ def calculate_edges(ensembles, markets):
             if mean is None or std is None:
                 continue
 
+            # Check if this event has healthy liquidity (at least 3 contracts with real mids)
+            real_mids = sum(1 for c in market_data["contracts"]
+                           if c.get("mid") is not None and 0.01 < c["mid"] < 0.99)
+            is_settled = real_mids < 2  # Likely settled or dead market
+
             for contract in market_data["contracts"]:
                 mid = contract.get("mid")
-                if mid is None or mid <= 0 or mid >= 1:
+                if mid is None:
+                    continue
+
+                # Skip dead/settled contracts (bid=0 ask=0.01 or bid=0.99 ask=1.0)
+                yes_bid = contract.get("yes_bid") or 0
+                yes_ask = contract.get("yes_ask") or 0
+                spread = yes_ask - yes_bid
+                if mid <= 0.01 or mid >= 0.99 or spread >= 0.5:
                     continue
 
                 strike_type = contract["strike_type"]
@@ -426,16 +438,16 @@ def calculate_edges(ensembles, markets):
                 edge = round(our_prob - mid, 4)
 
                 # Signal: YES if our prob > market (underpriced), NO if our prob < market (overpriced)
-                if abs(edge) >= EDGE_THRESHOLD:
+                if abs(edge) >= EDGE_THRESHOLD and not is_settled:
                     signal = "YES" if edge > 0 else "NO"
                 else:
                     signal = None
 
-                # EV calculation: edge / (1 - our_prob) for YES, edge / our_prob for NO
-                if signal == "YES" and mid < 1:
-                    ev = edge / mid  # EV of buying YES at market price
-                elif signal == "NO" and mid > 0:
-                    ev = -edge / (1 - mid)  # EV of buying NO
+                # EV calculation
+                if signal == "YES" and mid > 0.01:
+                    ev = min(edge / mid, 10.0)  # Cap EV at 1000% for sanity
+                elif signal == "NO" and mid < 0.99:
+                    ev = min(-edge / (1 - mid), 10.0)
                 else:
                     ev = 0
 
@@ -540,24 +552,33 @@ def calculate_pace(forecasts, observations):
     """
     print("\n=== CALCULATING TEMPERATURE PACE ===\n")
 
-    now = datetime.now(timezone.utc)
-    today_str = now.strftime("%Y-%m-%d")
+    now_utc = datetime.now(timezone.utc)
     pace_data = {}
 
+    # UTC offsets for our city timezones (hardcoded to avoid pytz dependency)
+    TZ_OFFSETS = {
+        "America/New_York": -4, "America/Chicago": -5, "America/Denver": -6,
+        "America/Los_Angeles": -7, "America/Phoenix": -7,
+    }
+
     for city_code, obs in observations.items():
+        city_tz = CITIES.get(city_code, {}).get("tz", "America/New_York")
+        utc_offset = TZ_OFFSETS.get(city_tz, -5)
+        local_now = now_utc + timedelta(hours=utc_offset)
+        today_str = local_now.strftime("%Y-%m-%d")
+
         city_forecasts = forecasts.get(city_code, {}).get(today_str, {})
         hrrr = city_forecasts.get("ncep_hrrr_conus")
 
         if not hrrr or not hrrr.get("hourly"):
             continue
 
-        # Find the HRRR expected temp for the current hour
-        obs_time = obs.get("observed_at", "")
-        current_hour = now.strftime("%Y-%m-%dT%H:00")
+        # Match against HRRR hourly using LOCAL time (OpenMeteo returns local times)
+        local_hour = local_now.strftime("%Y-%m-%dT%H")
 
         expected_now = None
         for ht, temp in hrrr["hourly"]:
-            if ht.startswith(current_hour[:13]):  # Match to hour
+            if ht.startswith(local_hour):
                 expected_now = temp
                 break
 
