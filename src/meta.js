@@ -1,17 +1,13 @@
 export const META = {
-  "last_updated": "2026-04-08T14:22:30Z",
+  "last_updated": "2026-04-08T20:30:18Z",
   "cities": 10,
-  "models": 7,
+  "models": 3,
   "model_names": [
-    "gfs_seamless",
-    "ecmwf_ifs025",
-    "icon_seamless",
-    "gem_seamless",
-    "jma_seamless",
     "ncep_hrrr_conus",
-    "ncep_nbm_conus"
+    "ncep_nbm_conus",
+    "ecmwf_ifs025"
   ],
   "total_contracts": 240,
-  "total_edges": 27,
+  "total_edges": 19,
   "edge_threshold": 0.05
 };

@@ -1,14 +1,50 @@
 export const AI_ANALYSIS = {
   "claude": {
-    "summary": "Denver stands out as the clearest opportunity with strong ensemble agreement on warm temps well above thresholds, while the Dallas/Phoenix/Atlanta 'low' markets appear mispriced with markets overestimating cold overnight lows given the warm daytime forecasts. LA high 76F is a speculative lean given high model spread.",
+    "summary": "{\n  \"summary\": \"Ensemble models show strong cold signals for NYC, Chicago, and Philadelphia versus overly optimistic market pricing, while Denver pace anomaly and Atlanta/Chicago NO signals offer solid fade opportunities. The most trustworthy edges cluster around well-defined synoptic patterns (cold",
+    "picks": []
+  },
+  "gpt": {
+    "summary": "The ensemble forecasts show strong consensus on several temperature thresholds, particularly for New York, Chicago, Philadelphia, and Los Angeles highs, where the market appears undervaluing the probabilities. Some edges on lows and Denver highs are less certain due to model spread and local factors.",
     "picks": [
       {
-        "city": "Denver",
+        "city": "New York",
         "type": "high",
-        "threshold": "71",
+        "threshold": "53",
+        "signal": "YES",
+        "confidence": "LEAN",
+        "reasoning": "Moderate model agreement (3 models) with a forecast horizon of 2 days; ensemble temps near 47F with a steady warming trend, so 53F is plausible but slightly above ensemble mean. Urban heat island effect in NYC could push temps higher. Market undervalues this, but confidence is tempered by forecast horizon and model spread."
+      },
+      {
+        "city": "Chicago",
+        "type": "high",
+        "threshold": "65",
         "signal": "YES",
         "confidence": "STRONG",
-        "reasoning": "Ensemble mean of 71.1F with range 65.9-73.5F across 7 models puts us right at the threshold with ~49% probability, yet market is only pricing 17%. Denver is notorious for rapid warm-ups in April with strong downslope Chinook winds, and the current temp of 55.4F with a +15.7F expected rise is consistent with a classic spring warm pattern. Model agreement is solid. Market is dramatically underpricing this. Best edge on the board."
+        "reasoning": "Good model agreement (3 models) with temps forecasted around 63-65F for April 8-9, close to threshold. Ensemble range supports a high probability of exceeding 65F. Market significantly undervalues this. No major weather patterns expected to suppress temps. Confidence strong."
+      },
+      {
+        "city": "Philadelphia",
+        "type": "high",
+        "threshold": "59",
+        "signal": "YES",
+        "confidence": "LEAN",
+        "reasoning": "3 models show temps rising from low 50s to mid 50s on April 9, with a jump to mid 60s on April 10. Threshold 59F is near the upper bound for April 9, so some uncertainty exists. Coastal proximity could moderate temps slightly. Market undervalues this, but confidence is moderate due to forecast horizon and variability."
+      },
+      {
+        "city": "Chicago",
+        "type": "high",
+        "threshold": "70",
+        "signal": "NO",
+        "confidence": "STRONG",
+        "reasoning": "Ensemble forecasts show a sharp drop to high 40s on April 10, well below 70F. Market overvalues probability of exceeding 70F. Model agreement is good, and no known patterns suggest a warm spike. Strong confidence in NO."
+      },
+      {
+        "city": "Denver",
+        "type": "low",
+        "threshold": "38",
+        "signal": "NO",
+        "confidence": "LEAN",
+        "reasoning": "Model agreement moderate but forecast horizon longer; temps forecasted in low 70s highs with lows likely above 38F. Mountain terrain can cause variability, but current ensemble suggests low chance of dropping below 38F. Market overvalues this; lean NO."
       },
       {
         "city": "Denver",
@@ -16,23 +52,23 @@ export const AI_ANALYSIS = {
         "threshold": "45",
         "signal": "YES",
         "confidence": "LEAN",
-        "reasoning": "Ensemble strongly supports warm conditions (mean 71.1F high), making a low above 45F plausible, and our 85% vs market 62% suggests real edge. However, Denver lows can be deceptive \u2014 clear skies after warm days can cause rapid radiative cooling, and the city sits at elevation. The pace indicator (+4.7F) is supportive. Reasonable edge but Denver overnight temps are volatile, so not STRONG."
+        "reasoning": "Ensemble suggests lows near or above mid 40s, with some model spread. Mountain effects and diurnal variation could cause lows near 45F. Market undervalues this probability. Confidence moderate due to terrain complexity."
+      },
+      {
+        "city": "Los Angeles",
+        "type": "high",
+        "threshold": "75",
+        "signal": "YES",
+        "confidence": "STRONG",
+        "reasoning": "3 models agree on highs around 74F with a range up to 81.6F, making 75F a reasonable threshold to exceed. Coastal and urban heat island effects support warmer temps. Market significantly undervalues this; strong confidence."
       },
       {
         "city": "Dallas",
-        "type": "low",
-        "threshold": "57",
-        "signal": "NO",
+        "type": "high",
+        "threshold": "79",
+        "signal": "YES",
         "confidence": "LEAN",
-        "reasoning": "Dallas ensemble high of 76.9F is warm and consistent across 7 models, but a LOW threshold of 57F is a different question entirely. Overnight lows in Dallas in early April can easily drop 20-25F from daytime highs, especially with any frontal passage. The market at 76% YES (low stays above 57F) seems high, and our 40% implies significant downside risk. However, Dallas urban heat island effect supports warmer lows, and the current temp of 60.8F suggests a warm airmass in place. Edge is real but overnight low forecasting is noisier \u2014 lean NO rather than strong."
-      },
-      {
-        "city": "Phoenix",
-        "type": "low",
-        "threshold": "67",
-        "signal": "NO",
-        "confidence": "LEAN",
-        "reasoning": "Phoenix ensemble high of 95.1F is very hot and well-agreed across 7 models, but the LOW threshold of 67F is the question. Phoenix in April can have lows in the mid-50s to low 60s even on hot days \u2014 a 95F high with a 67F low is not guaranteed. Desert radiative cooling is extreme. Market at 78% seems to be anchoring too heavily on the hot daytime signal. Our 42% feels more defensible. However, with such extreme heat, the overnight recovery may be slower, keeping lows elevated. Lean NO but not STRONG given desert cooling dynamics cut both ways."
+        "reasoning": "Ensemble temps near 79-80F with moderate model agreement. Market undervalues probability, but forecast horizon and slight model spread suggest some caution. Urban heat island may support warmer temps."
       },
       {
         "city": "Atlanta",
@@ -40,84 +76,55 @@ export const AI_ANALYSIS = {
         "threshold": "51",
         "signal": "NO",
         "confidence": "LEAN",
-        "reasoning": "Atlanta ensemble high of 68.1F with extremely tight model agreement (range only 67.4-68.9F) is impressive, but a low threshold of 51F means we need overnight temps to stay above 51F. Atlanta in April with a 68F high could easily see lows in the upper 40s to low 50s depending on cloud cover and wind. Market at 78% YES seems aggressive. Our 52% is more neutral. The tight model range on the high is actually a signal of a stable, settled airmass which could support warmer lows, but 25% edge is meaningful. Lean NO."
+        "reasoning": "Ensemble temps for lows near 68F, well above 51F. Market overvalues probability of lows below 51F. Confidence moderate given stable forecast and no significant cold fronts expected."
       },
       {
-        "city": "Los Angeles",
+        "city": "Houston",
         "type": "high",
-        "threshold": "76",
+        "threshold": "79",
         "signal": "YES",
         "confidence": "LEAN",
-        "reasoning": "LA ensemble mean of 72.2F with a wide range of 68.5-82.3F and high spread (+/-4.73F) reflects genuine model disagreement. The upper end of the range (82.3F) shows some models see a hot day, likely driven by offshore flow or Santa Ana-adjacent conditions. Market at only 6% for hitting 76F seems too low given the range. However, LA coastal marine influence typically caps temperatures, and the mean is well below 76F. This is a speculative play on the hot-tail scenario. The pace indicator (+5.6F above current) is supportive of warming. Lean YES but small position sizing warranted given high uncertainty."
+        "reasoning": "Ensemble temps near 79-80F with moderate model agreement. Market undervalues probability. Coastal humidity and urban heat island may support warmer temps, but some variability possible."
       },
       {
-        "city": "Denver",
+        "city": "Miami",
         "type": "low",
-        "threshold": "38",
-        "signal": "NO",
-        "confidence": "SKIP",
-        "reasoning": "Our probability of 0% vs market 10% gives a mathematical edge, but a 10% market price on an extreme cold scenario with only ~11% EV is not worth the noise. With Denver forecasted warm, the chance of a sub-38F low is genuinely near zero, but the market is already pricing it cheaply. Thin EV, small absolute edge, and the asymmetric risk of being wrong on a tail event makes this a skip. Not enough juice."
-      }
-    ]
-  },
-  "gpt": {
-    "summary": "The ensemble forecasts show strong signals for Denver and Los Angeles edges with good model agreement and reasonable forecast horizon, suggesting value in those markets. Conversely, the Dallas, Phoenix, and Atlanta edges appear overvalued by the market given ensemble probabilities and city-specific factors, indicating caution or avoidance.",
-    "picks": [
-      {
-        "city": "Denver",
-        "type": "high",
-        "threshold": "71F",
+        "threshold": "71",
         "signal": "YES",
-        "confidence": "STRONG",
-        "reasoning": "High model agreement (7 models), consistent forecast horizon (April 8), and a clear signal with ensemble mean near threshold and low uncertainty. Denver's inland location reduces coastal influence, making the ensemble forecast reliable."
+        "confidence": "LEAN",
+        "reasoning": "Ensemble temps near 76-77F, well above 71F threshold. Market undervalues probability. Coastal and tropical climate stable, so confidence moderate."
       },
       {
-        "city": "Denver",
+        "city": "Chicago",
         "type": "low",
-        "threshold": "45F",
+        "threshold": "46",
         "signal": "YES",
         "confidence": "LEAN",
-        "reasoning": "Strong ensemble signal with 85% probability vs market 62%, good model agreement, but low temperature forecasts can be sensitive to local terrain and diurnal effects. Confidence is good but slightly tempered by potential local variability."
-      },
-      {
-        "city": "Los Angeles",
-        "type": "high",
-        "threshold": "76F",
-        "signal": "YES",
-        "confidence": "LEAN",
-        "reasoning": "Ensemble shows 21% probability vs market 6%, with moderate model agreement and a forecast horizon of April 8. Coastal influence and urban heat island effects can cause some variability, but the signal is strong enough to lean YES."
-      },
-      {
-        "city": "Dallas",
-        "type": "low",
-        "threshold": "57F",
-        "signal": "NO",
-        "confidence": "LEAN",
-        "reasoning": "Ensemble probability (40%) is well below market (76%), indicating market overpricing. Models show good agreement but Dallas can have rapid temperature swings due to frontal passages, so some caution is warranted."
+        "reasoning": "Ensemble lows near mid 40s with moderate model agreement. Market undervalues probability. No major cold fronts expected, confidence moderate."
       },
       {
         "city": "Phoenix",
         "type": "low",
-        "threshold": "67F",
-        "signal": "NO",
-        "confidence": "STRONG",
-        "reasoning": "Ensemble probability (42%) is significantly lower than market (78%) with strong model agreement and stable desert climate patterns. Large temperature jumps unlikely, so market edge is likely overstated."
+        "threshold": "68",
+        "signal": "YES",
+        "confidence": "LEAN",
+        "reasoning": "Ensemble lows near low 90s highs but lows likely above 68F. Market undervalues probability. Desert climate stable, but diurnal variation could affect lows. Moderate confidence."
       },
       {
-        "city": "Atlanta",
+        "city": "Dallas",
         "type": "low",
-        "threshold": "51F",
-        "signal": "NO",
+        "threshold": "60",
+        "signal": "YES",
         "confidence": "LEAN",
-        "reasoning": "Ensemble shows 52% vs market 78%, moderate model agreement but Atlanta's variable spring weather and urban heat island could cause some fluctuations. Lean NO due to market overpricing but with some caution."
+        "reasoning": "Ensemble lows near 60F with moderate model agreement. Market undervalues probability. Urban heat island effect may support warmer lows. Moderate confidence."
       },
       {
         "city": "Denver",
-        "type": "low",
-        "threshold": "38F",
-        "signal": "NO",
-        "confidence": "SKIP",
-        "reasoning": "Low ensemble probability (0%) vs market (10%) but low absolute probabilities and small edge suggest limited value. Forecast horizon and local terrain effects add uncertainty."
+        "type": "high",
+        "threshold": "76",
+        "signal": "YES",
+        "confidence": "LEAN",
+        "reasoning": "Ensemble highs near 72-74F with some spread; threshold 76F slightly above mean but possible. Market undervalues probability. Mountain terrain adds uncertainty; confidence moderate."
       }
     ]
   }
