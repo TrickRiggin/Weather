@@ -5,7 +5,7 @@ Fetches forecasts from 7 weather models via OpenMeteo, compares against
 Kalshi weather market pricing to find edges.
 """
 
-import json, os, sys, time, math, requests
+import json, os, sys, time, math, requests, uuid
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -406,13 +406,13 @@ def calculate_edges(ensembles, markets):
                 if mid is None:
                     continue
 
-                # Skip dead contracts: no real bid/ask spread, or pinned at extremes
+                # Skip dead/settled contracts
                 yes_bid = contract.get("yes_bid") or 0
                 yes_ask = contract.get("yes_ask") or 0
                 spread = yes_ask - yes_bid
                 if spread >= 0.50:  # No real market
                     continue
-                if mid <= 0.005 or mid >= 0.995:  # Fully resolved
+                if mid <= 0.05 or mid >= 0.95:  # Near-settled — market has intraday info our model lacks
                     continue
 
                 strike_type = contract["strike_type"]
@@ -520,12 +520,22 @@ def fetch_observations(cities=CITIES):
             if temp_c is not None:
                 temp_f = round(temp_c * 9/5 + 32, 1)
                 observed_at = props.get("timestamp", "")
+                # Track observation age so frontend can flag stale readings
+                obs_age_min = None
+                if observed_at:
+                    try:
+                        obs_time = datetime.fromisoformat(observed_at.replace("Z", "+00:00"))
+                        obs_age_min = round((datetime.now(timezone.utc) - obs_time).total_seconds() / 60)
+                    except ValueError:
+                        pass
                 observations[city_code] = {
                     "temp_f": temp_f,
                     "observed_at": observed_at,
                     "station": station_id,
+                    "obs_age_min": obs_age_min,
                 }
-                print(f"  {city_code}: {temp_f}F ({station_id})")
+                age_str = f", {obs_age_min}min ago" if obs_age_min else ""
+                print(f"  {city_code}: {temp_f}F ({station_id}{age_str})")
             else:
                 print(f"  {city_code}: null temperature")
 
@@ -727,6 +737,426 @@ Respond in JSON format:
 
 
 # ============================================================
+#  HISTORICAL DATA — SIGNAL RECORDING & RESOLUTION
+# ============================================================
+
+DATA_DIR = Path(__file__).parent / "data"
+
+
+def record_signals(edges, ensembles, pace_data, ai_results):
+    """
+    Append edge signals to data/signals.jsonl for backtesting.
+    Deduplicates: skips tickers already recorded within the last hour.
+    """
+    print("\n=== RECORDING SIGNALS ===\n")
+
+    DATA_DIR.mkdir(exist_ok=True)
+    signals_file = DATA_DIR / "signals.jsonl"
+
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    signals = [e for e in edges if e["signal"]]
+
+    if not signals:
+        print("  No signals to record")
+        return
+
+    # Load tickers recorded in the last hour for dedup
+    recent_tickers = set()
+    if signals_file.exists():
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=1)
+        for line in signals_file.read_text(encoding="utf-8").splitlines():
+            try:
+                rec = json.loads(line)
+                rec_ts = datetime.fromisoformat(rec["snapshot_ts"].replace("Z", "+00:00"))
+                if rec_ts > cutoff:
+                    recent_tickers.add(rec["ticker"])
+            except (json.JSONDecodeError, KeyError, ValueError):
+                continue
+
+    new_count = 0
+    with open(signals_file, "a", encoding="utf-8") as f:
+        for e in signals:
+            if e["ticker"] in recent_tickers:
+                continue
+
+            # Ensemble data for this signal
+            ens = ensembles.get(e["city"], {}).get(e["date"], {})
+            pace = pace_data.get(e["city"], {})
+
+            # Match AI picks to this signal
+            ai_picks = {}
+            for model_name, analysis in ai_results.items():
+                for pick in analysis.get("picks", []):
+                    if (pick.get("city") == e["city"]
+                            and pick.get("type") == e["type"]
+                            and str(pick.get("threshold")) == str(e["threshold"])):
+                        ai_picks[model_name] = pick.get("confidence", "")
+
+            record = {
+                "id": str(uuid.uuid4()),
+                "snapshot_ts": timestamp,
+                "city": e["city"],
+                "date": e["date"],
+                "type": e["type"],
+                "ticker": e["ticker"],
+                "strike_type": e["strike_type"],
+                "floor": e["floor"],
+                "cap": e["cap"],
+                "threshold": e["threshold"],
+                "our_prob": e["our_prob"],
+                "market_mid": e["market_mid"],
+                "edge": e["edge"],
+                "signal": e["signal"],
+                "ev": e["ev"],
+                "yes_bid": e["yes_bid"],
+                "yes_ask": e["yes_ask"],
+                "volume": e["volume"],
+                "close_time": e["close_time"],
+                "ensemble_mean": ens.get(f"{e['type']}_mean"),
+                "ensemble_std": ens.get(f"{e['type']}_std"),
+                "model_count": ens.get("model_count"),
+                "pace_delta": pace.get("pace_delta"),
+                "ai": ai_picks if ai_picks else None,
+            }
+
+            f.write(json.dumps(record, default=str) + "\n")
+            new_count += 1
+            recent_tickers.add(e["ticker"])
+
+    total = len(signals)
+    print(f"  Recorded {new_count} new signals ({total - new_count} deduped within 1h)")
+
+
+def resolve_signals():
+    """
+    Check past signals whose markets have closed. Fetch actual temps
+    from NWS observations, score as WIN/LOSS, compute P&L.
+    """
+    print("\n=== RESOLVING PAST SIGNALS ===\n")
+
+    signals_file = DATA_DIR / "signals.jsonl"
+    resolutions_file = DATA_DIR / "resolutions.jsonl"
+
+    if not signals_file.exists():
+        print("  No signals file yet")
+        return
+
+    now = datetime.now(timezone.utc)
+
+    # Load already-resolved tickers
+    resolved_tickers = set()
+    if resolutions_file.exists():
+        for line in resolutions_file.read_text(encoding="utf-8").splitlines():
+            try:
+                rec = json.loads(line)
+                resolved_tickers.add(rec["ticker"])
+            except (json.JSONDecodeError, KeyError):
+                continue
+
+    # Find unresolved signals whose close_time has passed (+ 2h buffer for NWS data)
+    to_resolve = {}  # {(city, date, type): first_signal_for_that_ticker}
+    for line in signals_file.read_text(encoding="utf-8").splitlines():
+        try:
+            rec = json.loads(line)
+            ticker = rec["ticker"]
+            if ticker in resolved_tickers:
+                continue
+            close_time = datetime.fromisoformat(rec["close_time"].replace("Z", "+00:00"))
+            if now > close_time + timedelta(hours=2):
+                # Keep first occurrence per ticker (entry signal)
+                if ticker not in {s["ticker"] for sigs in to_resolve.values() for s in sigs}:
+                    key = (rec["city"], rec["date"], rec["type"])
+                    if key not in to_resolve:
+                        to_resolve[key] = []
+                    to_resolve[key].append(rec)
+        except (json.JSONDecodeError, KeyError, ValueError):
+            continue
+
+    if not to_resolve:
+        print("  No signals ready for resolution")
+        return
+
+    pending = sum(len(v) for v in to_resolve.values())
+    print(f"  {pending} signals across {len(to_resolve)} markets to resolve")
+
+    # Fetch actual temps
+    actual_temps = fetch_actual_temps(to_resolve)
+
+    new_resolutions = 0
+    with open(resolutions_file, "a", encoding="utf-8") as f:
+        for key, sigs in to_resolve.items():
+            city, date_str, mtype = key
+            actual = actual_temps.get(key)
+            if actual is None:
+                continue
+
+            for sig in sigs:
+                strike_type = sig["strike_type"]
+                floor = sig.get("floor")
+                cap = sig.get("cap")
+
+                # Did the contract resolve YES (true)?
+                if strike_type == "less" and cap is not None:
+                    contract_yes = actual < cap
+                elif strike_type == "greater" and floor is not None:
+                    contract_yes = actual > floor
+                elif strike_type == "between" and floor is not None and cap is not None:
+                    contract_yes = floor <= actual < cap
+                else:
+                    continue
+
+                # Score the signal
+                if sig["signal"] == "YES":
+                    win = contract_yes
+                    buy_price = sig.get("yes_ask") or sig["market_mid"]
+                    pnl = round((1.0 - buy_price) if win else -buy_price, 4)
+                else:  # NO
+                    win = not contract_yes
+                    yes_bid = sig.get("yes_bid") or sig["market_mid"]
+                    buy_price = round(1.0 - yes_bid, 4)
+                    pnl = round((1.0 - buy_price) if win else -buy_price, 4)
+
+                resolution = {
+                    "signal_id": sig.get("id"),
+                    "ticker": sig["ticker"],
+                    "city": city,
+                    "date": date_str,
+                    "type": mtype,
+                    "threshold": sig["threshold"],
+                    "signal": sig["signal"],
+                    "edge": sig["edge"],
+                    "our_prob": sig["our_prob"],
+                    "market_mid": sig["market_mid"],
+                    "ensemble_mean": sig.get("ensemble_mean"),
+                    "ensemble_std": sig.get("ensemble_std"),
+                    "actual_temp": actual,
+                    "contract_resolved_yes": contract_yes,
+                    "result": "WIN" if win else "LOSS",
+                    "buy_price": buy_price,
+                    "pnl": pnl,
+                    "ai": sig.get("ai"),
+                    "resolved_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                }
+
+                f.write(json.dumps(resolution, default=str) + "\n")
+                new_resolutions += 1
+                resolved_tickers.add(sig["ticker"])
+
+    print(f"  Resolved {new_resolutions} signals")
+
+
+def fetch_actual_temps(to_resolve):
+    """
+    Fetch actual observed high/low temps from NWS station observations.
+    Uses the same airport stations as our pace tracker — same source Kalshi settles against.
+    Returns: {(city, date, type): actual_temp_f}
+    """
+    NWS_STATIONS = {
+        "NYC": "KNYC", "LAX": "KLAX", "CHI": "KMDW",
+        "MIA": "KMIA", "DAL": "KDFW", "DEN": "KDEN",
+        "PHI": "KPHL", "ATL": "KATL", "HOU": "KIAH",
+        "PHX": "KPHX",
+    }
+
+    actuals = {}
+
+    # Group by (city, date) to minimize API calls
+    city_dates = {}
+    for (city, date_str, mtype) in to_resolve.keys():
+        key = (city, date_str)
+        if key not in city_dates:
+            city_dates[key] = set()
+        city_dates[key].add(mtype)
+
+    for (city_code, date_str), types in city_dates.items():
+        station = NWS_STATIONS.get(city_code)
+        if not station:
+            continue
+
+        city_info = CITIES.get(city_code)
+        if not city_info:
+            continue
+
+        try:
+            # Convert local date boundaries to UTC for the NWS query
+            city_tz = ZoneInfo(city_info["tz"])
+            local_start = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=city_tz)
+            local_end = local_start + timedelta(days=1)
+            start_utc = local_start.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            end_utc = local_end.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+            url = f"https://api.weather.gov/stations/{station}/observations"
+            resp = requests.get(
+                url,
+                params={"start": start_utc, "end": end_utc},
+                headers={"User-Agent": "WeatherEdge/1.0"},
+                timeout=15,
+            )
+
+            if resp.status_code != 200:
+                print(f"  {city_code} {date_str}: HTTP {resp.status_code}")
+                continue
+
+            data = resp.json()
+            temps = []
+            for feature in data.get("features", []):
+                temp_c = feature.get("properties", {}).get("temperature", {}).get("value")
+                if temp_c is not None:
+                    temps.append(temp_c * 9 / 5 + 32)
+
+            if temps:
+                if "high" in types:
+                    actuals[(city_code, date_str, "high")] = round(max(temps), 1)
+                if "low" in types:
+                    actuals[(city_code, date_str, "low")] = round(min(temps), 1)
+                print(f"  {city_code} {date_str}: high={max(temps):.1f}F low={min(temps):.1f}F ({len(temps)} obs)")
+            else:
+                print(f"  {city_code} {date_str}: no temperature observations")
+
+        except Exception as e:
+            print(f"  {city_code} {date_str}: ERROR {e}")
+
+        time.sleep(0.3)
+
+    return actuals
+
+
+def backtest_report():
+    """Print backtest performance stats from resolved signals."""
+    resolutions_file = DATA_DIR / "resolutions.jsonl"
+    signals_file = DATA_DIR / "signals.jsonl"
+
+    if not resolutions_file.exists():
+        print("\n  No resolutions yet — need at least one market to close and resolve.")
+        return
+
+    # Load resolutions
+    resolutions = []
+    for line in resolutions_file.read_text(encoding="utf-8").splitlines():
+        try:
+            resolutions.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+
+    # Count total signals
+    total_signals = 0
+    if signals_file.exists():
+        total_signals = sum(1 for _ in signals_file.read_text(encoding="utf-8").splitlines() if _.strip())
+
+    if not resolutions:
+        print(f"\n  {total_signals} signals recorded, 0 resolved. Markets still open.")
+        return
+
+    # ---- Overall stats ----
+    wins = [r for r in resolutions if r["result"] == "WIN"]
+    losses = [r for r in resolutions if r["result"] == "LOSS"]
+    total_pnl = sum(r["pnl"] for r in resolutions)
+    avg_pnl = total_pnl / len(resolutions)
+
+    print(f"""
+{'=' * 65}
+  BACKTEST RESULTS
+{'=' * 65}
+
+  Signals recorded:  {total_signals}
+  Resolved:          {len(resolutions)}
+  Pending:           {total_signals - len(resolutions)}
+
+  Win Rate:          {len(wins)}/{len(resolutions)} = {len(wins)/len(resolutions):.1%}
+  Avg P&L/signal:    ${avg_pnl:+.4f}  (on $1 bets)
+  Total P&L:         ${total_pnl:+.2f}
+""")
+
+    # ---- By edge bucket ----
+    buckets = [
+        ("5-10%",  0.05, 0.10),
+        ("10-20%", 0.10, 0.20),
+        ("20-50%", 0.20, 0.50),
+        ("50%+",   0.50, 2.00),
+    ]
+    print("  BY EDGE SIZE:")
+    for label, lo, hi in buckets:
+        bucket = [r for r in resolutions if lo <= abs(r["edge"]) < hi]
+        if not bucket:
+            continue
+        bwins = sum(1 for r in bucket if r["result"] == "WIN")
+        bpnl = sum(r["pnl"] for r in bucket)
+        print(f"    {label:>8}: {len(bucket):3d} signals, "
+              f"{bwins/len(bucket):5.1%} win, "
+              f"${bpnl/len(bucket):+.4f} avg P&L, "
+              f"${bpnl:+.2f} total")
+
+    # ---- By type ----
+    print("\n  BY TYPE:")
+    for mtype in ["high", "low"]:
+        subset = [r for r in resolutions if r["type"] == mtype]
+        if not subset:
+            continue
+        swins = sum(1 for r in subset if r["result"] == "WIN")
+        spnl = sum(r["pnl"] for r in subset)
+        print(f"    {mtype:>8}: {len(subset):3d} signals, "
+              f"{swins/len(subset):5.1%} win, "
+              f"${spnl/len(subset):+.4f} avg P&L")
+
+    # ---- By city ----
+    print("\n  BY CITY:")
+    city_groups = {}
+    for r in resolutions:
+        city_groups.setdefault(r["city"], []).append(r)
+    for city in sorted(city_groups, key=lambda c: -len(city_groups[c])):
+        subset = city_groups[city]
+        swins = sum(1 for r in subset if r["result"] == "WIN")
+        spnl = sum(r["pnl"] for r in subset)
+        print(f"    {city:>8}: {len(subset):3d} signals, "
+              f"{swins/len(subset):5.1%} win, "
+              f"${spnl:+.2f} total P&L")
+
+    # ---- By signal direction ----
+    print("\n  BY DIRECTION:")
+    for direction in ["YES", "NO"]:
+        subset = [r for r in resolutions if r["signal"] == direction]
+        if not subset:
+            continue
+        swins = sum(1 for r in subset if r["result"] == "WIN")
+        spnl = sum(r["pnl"] for r in subset)
+        print(f"    {direction:>8}: {len(subset):3d} signals, "
+              f"{swins/len(subset):5.1%} win, "
+              f"${spnl/len(subset):+.4f} avg P&L")
+
+    # ---- AI accuracy ----
+    ai_resolutions = [r for r in resolutions if r.get("ai")]
+    if ai_resolutions:
+        print("\n  AI PICK ACCURACY:")
+        ai_stats = {}  # {(model, confidence): [wins, total]}
+        for r in ai_resolutions:
+            for model, conf in r["ai"].items():
+                key = (model, conf)
+                if key not in ai_stats:
+                    ai_stats[key] = [0, 0]
+                ai_stats[key][1] += 1
+                if r["result"] == "WIN":
+                    ai_stats[key][0] += 1
+        for (model, conf), (w, t) in sorted(ai_stats.items()):
+            print(f"    {model:>8} {conf:>8}: {t:3d} picks, {w/t:.1%} win")
+
+    # ---- Calibration (our_prob vs actual hit rate) ----
+    print("\n  CALIBRATION (our predicted prob vs actual outcome):")
+    cal_buckets = [(0, 0.2), (0.2, 0.4), (0.4, 0.6), (0.6, 0.8), (0.8, 1.01)]
+    for lo, hi in cal_buckets:
+        # For YES signals, our_prob is how likely the contract resolves yes
+        # For NO signals, 1 - our_prob is how likely contract resolves no
+        subset = [r for r in resolutions if lo <= r["our_prob"] < hi]
+        if not subset:
+            continue
+        actual_yes = sum(1 for r in subset if r["contract_resolved_yes"])
+        print(f"    P={lo:.0%}-{hi:.0%}: {len(subset):3d} contracts, "
+              f"actual YES rate {actual_yes/len(subset):.1%} "
+              f"(predicted avg {sum(r['our_prob'] for r in subset)/len(subset):.1%})")
+
+    print(f"\n{'=' * 65}")
+
+
+# ============================================================
 #  FILE WRITERS
 # ============================================================
 
@@ -805,6 +1235,15 @@ def main():
 
     write_mode = "--write-data" in sys.argv
     skip_ai = "--skip-ai" in sys.argv
+    backtest_only = "--backtest" in sys.argv
+
+    # Backtest mode — just print stats and exit
+    if backtest_only:
+        print("=" * 65)
+        print("  WEATHER EDGE — Backtest Report")
+        print("=" * 65)
+        backtest_report()
+        return
 
     print("=" * 65)
     print("  WEATHER EDGE — Multi-Model Ensemble Pipeline")
@@ -835,6 +1274,10 @@ def main():
     ai_results = {}
     if not skip_ai:
         ai_results = ai_analysis(edges, ensembles, pace_data, observations)
+
+    # 7. Record signals + resolve past ones (always, not just write mode)
+    record_signals(edges, ensembles, pace_data, ai_results)
+    resolve_signals()
 
     # 8. Write data files
     if write_mode:

@@ -8,8 +8,10 @@ Weather market prediction platform. React 19 + Vite frontend, Python data pipeli
 
 ## Key Files
 - `src/App.jsx` — React frontend (Scanner, Cities, Guide tabs)
-- `refresh_weather.py` — Python pipeline (OpenMeteo, Kalshi, NWS, AI analysis)
+- `refresh_weather.py` — Python pipeline (OpenMeteo, Kalshi, NWS, AI analysis, historical tracking)
 - Auto-generated JS: `markets.js`, `forecasts.js`, `edges.js`, `observations.js`, `ai_analysis.js`, `meta.js`
+- `data/signals.jsonl` — Historical edge signal snapshots (append-only)
+- `data/resolutions.jsonl` — Resolved signals with actual temps, WIN/LOSS, P&L
 - `.github/workflows/refresh.yml` — Refresh via cron-job.org repository_dispatch
 
 ## Architecture
@@ -58,7 +60,7 @@ signal = YES/NO when |edge| >= 5%
 ## Refresh Schedule
 - **Every 20-30 min** — cron-job.org -> `repository_dispatch` (type: `light-refresh`)
 - Single workflow handles everything (no heavy/light split — pipeline runs in ~45s)
-- Full pipeline: OpenMeteo forecasts -> ensemble -> Kalshi markets -> edges -> NWS obs -> pace -> AI analysis -> write src/
+- Full pipeline: OpenMeteo forecasts -> ensemble -> Kalshi markets -> edges -> NWS obs -> pace -> AI analysis -> record signals -> resolve past signals -> write src/
 
 ## UI
 - Dark theme (#0f172a backgrounds, blue/cyan #3b82f6/#06b6d4 gradient accents)
@@ -83,11 +85,19 @@ signal = YES/NO when |edge| >= 5%
 - `KALSHI_API_KEY` — not currently used (read-only is unauthenticated) but available
 - `KALSHI_RSA_KEY` — same, for future trading integration
 
+## Historical Data & Backtesting
+- **Signal recording**: Every refresh appends edge signals to `data/signals.jsonl` (deduped within 1 hour per ticker)
+- **Resolution**: Each refresh checks if past signals' markets have closed (close_time + 2h), fetches actual temps from NWS observations, scores WIN/LOSS with P&L
+- **Actual temps source**: NWS airport station observations (same stations as pace tracker) — max/min temp for the date in the city's local timezone
+- **P&L model**: $1 bet at market ask (YES signals) or 1-bid (NO signals), collect $1 on win
+- **Backtest report**: `python refresh_weather.py --backtest` — win rate, P&L by edge bucket/city/type/direction, AI pick accuracy, calibration
+- **Signal schema**: `{id, snapshot_ts, city, date, type, ticker, strike_type, floor, cap, threshold, our_prob, market_mid, edge, signal, ev, yes_bid, yes_ask, volume, close_time, ensemble_mean, ensemble_std, model_count, pace_delta, ai}`
+- **Resolution schema**: `{signal_id, ticker, city, date, type, threshold, signal, edge, our_prob, market_mid, ensemble_mean, ensemble_std, actual_temp, contract_resolved_yes, result, buy_price, pnl, ai, resolved_at}`
+
 ## Future Ideas
-- City-specific sigma floors (calibrate from historical forecast error)
+- City-specific sigma floors (calibrate from historical forecast error — now possible with backtest data)
 - Weight models differently by forecast horizon (HRRR for day 0, ECMWF for day 2+)
-- Historical accuracy tracking (did our ensemble beat the market?)
-- Model leaderboard (which models are sharpest per city/metric?)
+- Model leaderboard (which models are sharpest per city/metric? — track per-model forecasts in signals)
 - Pace-adjusted ensemble feeding back into edge calculation
 - Telegram alerts for high-edge opportunities
 - Expand to 20 cities (all Kalshi markets)
