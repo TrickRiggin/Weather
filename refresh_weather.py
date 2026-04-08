@@ -395,16 +395,52 @@ def _parse_price(val):
 #  EDGE CALCULATION
 # ============================================================
 
-def calculate_edges(ensembles, markets):
+def calculate_edges(ensembles, markets, pace_data=None):
     """
     Compare ensemble probabilities against Kalshi market prices.
+    Uses pace-adjusted forecasts for same-day highs and horizon-based
+    model weighting (HRRR dominant day 0, NBM/ECMWF for day 2+).
     Returns: [{city, date, type, contract_ticker, threshold, our_prob, market_prob, edge, signal}]
     """
     print("\n=== CALCULATING EDGES ===\n")
 
+    pace_data = pace_data or {}
+
+    # Determine today's local date per city
+    now_utc = datetime.now(timezone.utc)
+    city_today = {}
+    for city_code, city in CITIES.items():
+        local_now = now_utc.astimezone(ZoneInfo(city["tz"]))
+        city_today[city_code] = local_now.strftime("%Y-%m-%d")
+
+    # Model weights by days-ahead horizon
+    # Day 0: HRRR is king (3km, hourly updates, pace-corrected)
+    # Day 1: balanced, NBM slight lead (it already blends intelligently)
+    # Day 2+: HRRR nulls out, NBM and ECMWF carry
+    HORIZON_WEIGHTS = {
+        0: {"ncep_hrrr_conus": 2.0, "ncep_nbm_conus": 1.0, "ecmwf_ifs025": 0.5},
+        1: {"ncep_hrrr_conus": 1.0, "ncep_nbm_conus": 1.2, "ecmwf_ifs025": 0.8},
+    }
+    DEFAULT_WEIGHTS = {"ncep_nbm_conus": 1.2, "ecmwf_ifs025": 1.0}
+
+    def horizon_weighted_mean(model_temps, horizon):
+        """Compute horizon-weighted mean from {model_key: temp} dict."""
+        weights = HORIZON_WEIGHTS.get(min(horizon, 1), DEFAULT_WEIGHTS)
+        total_w, total_v = 0, 0
+        for model, temp in model_temps.items():
+            if temp is None:
+                continue
+            w = weights.get(model, 0.5)
+            if w > 0:
+                total_v += temp * w
+                total_w += w
+        return round(total_v / total_w, 1) if total_w > 0 else None
+
     edges = []
     for city_code, city_markets in markets.items():
         city_ensemble = ensembles.get(city_code, {})
+        today = city_today.get(city_code, "")
+        pace = pace_data.get(city_code, {})
 
         for key, market_data in city_markets.items():
             date_str = market_data["date"]
@@ -414,8 +450,29 @@ def calculate_edges(ensembles, markets):
             if not ensemble:
                 continue
 
-            mean = ensemble["high_mean"] if mtype == "high" else ensemble.get("low_mean")
-            std = ensemble["high_std"] if mtype == "high" else ensemble.get("low_std")
+            # Determine forecast horizon (days ahead)
+            try:
+                from datetime import date as _date
+                horizon = (_date.fromisoformat(date_str) - _date.fromisoformat(today)).days
+            except Exception:
+                horizon = 1
+            horizon = max(0, horizon)
+
+            # Get per-model temps and raw ensemble stats
+            model_temps = ensemble.get(f"{mtype}_models", {})
+            raw_std = ensemble["high_std"] if mtype == "high" else ensemble.get("low_std")
+
+            # Pick the best mean based on what data we have:
+            # Day 0 high + pace data → pace-adjusted HRRR (observed reality)
+            # Otherwise → horizon-weighted model mean
+            if horizon == 0 and mtype == "high" and pace.get("adjusted_high") is not None:
+                mean = pace["adjusted_high"]
+            elif model_temps:
+                mean = horizon_weighted_mean(model_temps, horizon)
+            else:
+                mean = ensemble["high_mean"] if mtype == "high" else ensemble.get("low_mean")
+
+            std = raw_std
             if mean is None or std is None:
                 continue
 
@@ -480,11 +537,12 @@ def calculate_edges(ensembles, markets):
                 else:
                     signal = None
 
-                # EV calculation
+                # EV calculation (capped — if you're seeing 300%+ EV against a liquid market,
+                # the model is probably wrong, not the market)
                 if signal == "YES" and mid > 0.01:
-                    ev = min(edge / mid, 10.0)  # Cap EV at 1000% for sanity
+                    ev = min(edge / mid, 3.0)
                 elif signal == "NO" and mid < 0.99:
-                    ev = min(-edge / (1 - mid), 10.0)
+                    ev = min(-edge / (1 - mid), 3.0)
                 else:
                     ev = 0
 
@@ -1378,8 +1436,8 @@ def main():
     # 4. Fetch Kalshi markets
     markets = fetch_kalshi_markets()
 
-    # 5. Calculate edges
-    edges = calculate_edges(ensembles, markets)
+    # 5. Calculate edges (pace-aware — uses HRRR pace adjustment for day 0 highs)
+    edges = calculate_edges(ensembles, markets, pace_data=pace_data)
 
     # 6. Record signals + resolve past ones (always, not just write mode)
     record_signals(edges, ensembles, pace_data)
