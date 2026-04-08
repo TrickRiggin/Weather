@@ -782,7 +782,7 @@ Respond in JSON format:
 DATA_DIR = Path(__file__).parent / "data"
 
 
-def record_signals(edges, ensembles, pace_data, ai_results):
+def record_signals(edges, ensembles, pace_data):
     """
     Append edge signals to data/signals.jsonl for backtesting.
     Deduplicates: skips tickers already recorded within the last hour.
@@ -822,15 +822,6 @@ def record_signals(edges, ensembles, pace_data, ai_results):
             ens = ensembles.get(e["city"], {}).get(e["date"], {})
             pace = pace_data.get(e["city"], {})
 
-            # Match AI picks to this signal
-            ai_picks = {}
-            for model_name, analysis in ai_results.items():
-                for pick in analysis.get("picks", []):
-                    if (pick.get("city") == e["city"]
-                            and pick.get("type") == e["type"]
-                            and str(pick.get("threshold")) == str(e["threshold"])):
-                        ai_picks[model_name] = pick.get("confidence", "")
-
             record = {
                 "id": str(uuid.uuid4()),
                 "snapshot_ts": timestamp,
@@ -855,7 +846,6 @@ def record_signals(edges, ensembles, pace_data, ai_results):
                 "ensemble_std": ens.get(f"{e['type']}_std"),
                 "model_count": ens.get("model_count"),
                 "pace_delta": pace.get("pace_delta"),
-                "ai": ai_picks if ai_picks else None,
             }
 
             f.write(json.dumps(record, default=str) + "\n")
@@ -1199,7 +1189,7 @@ def backtest_report():
 #  FILE WRITERS
 # ============================================================
 
-def write_data_files(forecasts, ensembles, markets, edges, observations, pace_data, ai_results):
+def write_data_files(forecasts, ensembles, markets, edges, observations, pace_data):
     """Write all data to src/ JS files for the frontend."""
     src_dir = Path(__file__).parent / "src"
     src_dir.mkdir(exist_ok=True)
@@ -1241,9 +1231,8 @@ def write_data_files(forecasts, ensembles, markets, edges, observations, pace_da
     _write_js(src_dir / "observations.js", "OBSERVATIONS", obs_with_pace)
     print(f"  Wrote {len(observations)} observations to src/observations.js")
 
-    # ---- ai_analysis.js ----
-    _write_js(src_dir / "ai_analysis.js", "AI_ANALYSIS", ai_results)
-    print(f"  Wrote AI analysis to src/ai_analysis.js")
+    # ---- ai_analysis.js (empty — AI removed, models don't add value for singular temp values) ----
+    _write_js(src_dir / "ai_analysis.js", "AI_ANALYSIS", {})
 
     # ---- meta.js ----
     meta = {
@@ -1371,7 +1360,7 @@ def main():
     print("  WEATHER EDGE — Multi-Model Ensemble Pipeline")
     print("=" * 65)
     print(f"\n  Cities: {len(CITIES)} | Models: {len(WEATHER_MODELS)} | Forecast days: 3")
-    print(f"  Mode: {'WRITE' if write_mode else 'LOCAL'} | AI: {'OFF' if skip_ai else 'ON'}")
+    print(f"  Mode: {'WRITE' if write_mode else 'LOCAL'}")
 
     # 1. Fetch weather forecasts
     forecasts = fetch_forecasts()
@@ -1392,19 +1381,14 @@ def main():
     # 5. Calculate edges
     edges = calculate_edges(ensembles, markets)
 
-    # 6. AI analysis (optional)
-    ai_results = {}
-    if not skip_ai:
-        ai_results = ai_analysis(edges, ensembles, pace_data, observations)
-
-    # 7. Record signals + resolve past ones (always, not just write mode)
-    record_signals(edges, ensembles, pace_data, ai_results)
+    # 6. Record signals + resolve past ones (always, not just write mode)
+    record_signals(edges, ensembles, pace_data)
     resolve_signals()
 
-    # 8. Write data files
+    # 7. Write data files
     if write_mode:
         print("\n=== WRITING DATA FILES ===\n")
-        write_data_files(forecasts, ensembles, markets, edges, observations, pace_data, ai_results)
+        write_data_files(forecasts, ensembles, markets, edges, observations, pace_data)
     else:
         print("\n  [LOCAL MODE] — pass --write-data to write src/ files")
 

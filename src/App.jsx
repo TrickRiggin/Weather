@@ -3,7 +3,7 @@ import { EDGES } from "./edges.js";
 import { FORECASTS } from "./forecasts.js";
 import { MARKETS } from "./markets.js";
 import { OBSERVATIONS } from "./observations.js";
-import { AI_ANALYSIS } from "./ai_analysis.js";
+// AI analysis removed — singular model temps don't benefit from LLM interpretation
 import { META } from "./meta.js";
 import { RESULTS } from "./results.js";
 
@@ -75,16 +75,6 @@ const getForecastData = (e) => {
     : { mean: cityFcst.low_mean, std: cityFcst.low_std, models: cityFcst.low_models, modelCount: cityFcst.model_count };
 };
 
-const findAiPick = (e) => {
-  for (const [model, data] of Object.entries(AI_ANALYSIS || {})) {
-    const pick = data.picks?.find(p =>
-      p.city === e.city_name && p.type === e.type &&
-      String(p.threshold).replace(/F$/i, "") === String(e.threshold)
-    );
-    if (pick) return { model, ...pick };
-  }
-  return null;
-};
 
 function App() {
   const [tab, setTab] = useState("scanner");
@@ -263,7 +253,6 @@ function App() {
                       (e.signal === "NO" && e.strike_type === "greater" && forecastVal <= thresh)
                     );
 
-                    const aiPick = findAiPick(e);
                     const sigColor = e.signal === "YES" ? "#22c55e" : "#ef4444";
                     const sigBg = e.signal === "YES" ? "rgba(34,197,94,0.08)" : "rgba(239,68,68,0.08)";
                     const sigBorder = e.signal === "YES" ? "rgba(34,197,94,0.2)" : "rgba(239,68,68,0.2)";
@@ -362,31 +351,6 @@ function App() {
                           )}
                         </div>
 
-                        {/* AI Pick (if matched) */}
-                        {aiPick && (
-                          <div style={{ padding: "6px 16px 10px" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
-                              <span style={{ fontSize: 10, fontWeight: 800, color: aiPick.model === "claude" ? "#a78bfa" : "#22c55e", textTransform: "uppercase" }}>
-                                {aiPick.model}
-                              </span>
-                              {aiPick.confidence && aiPick.confidence !== "SKIP" && (
-                                <span style={{ fontSize: 9, fontWeight: 800, padding: "1px 6px", borderRadius: 3,
-                                  background: aiPick.confidence === "STRONG" ? "#22c55e" : aiPick.confidence === "LEAN" ? "#3b82f6" : "#64748b",
-                                  color: "#fff" }}>{aiPick.confidence}</span>
-                              )}
-                              <span style={{ fontSize: 9, fontWeight: 800, padding: "1px 6px", borderRadius: 3,
-                                background: aiPick.signal === e.signal ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)",
-                                color: aiPick.signal === e.signal ? "#22c55e" : "#ef4444",
-                                border: `1px solid ${aiPick.signal === e.signal ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)"}` }}>
-                                {aiPick.signal === e.signal ? "AGREES" : `SAYS ${aiPick.signal}`}
-                              </span>
-                            </div>
-                            <div style={{ fontSize: 10, color: "#64748b", lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
-                              {aiPick.reasoning}
-                            </div>
-                          </div>
-                        )}
-
                         {/* Footer: Volume + Expires */}
                         <div style={{ padding: "8px 16px", borderTop: "1px solid #1e293b", display: "flex", justifyContent: "space-between", fontSize: 10, color: "#475569" }}>
                           <span>Vol: {(e.volume || 0).toLocaleString()}</span>
@@ -396,19 +360,6 @@ function App() {
                     );
                   })}
                 </div>
-              </div>
-            )}
-
-            {/* AI Insight Summary (compact — picks are on cards) */}
-            {AI_ANALYSIS && Object.keys(AI_ANALYSIS).length > 0 && signals.length > 0 && filterCity === "all" && filterType === "all" && (
-              <div style={{ marginBottom: 20, padding: "12px 16px", background: "#0f172a", borderRadius: 10, border: "1px solid #1e293b" }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "#64748b", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>AI Insights</div>
-                {Object.entries(AI_ANALYSIS).map(([model, data]) => data.summary && (
-                  <div key={model} style={{ marginBottom: 6 }}>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: model === "claude" ? "#a78bfa" : "#22c55e", textTransform: "uppercase", marginRight: 6 }}>{model}:</span>
-                    <span style={{ fontSize: 11, color: "#94a3b8", lineHeight: 1.5 }}>{data.summary}</span>
-                  </div>
-                ))}
               </div>
             )}
 
