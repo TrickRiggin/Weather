@@ -1,5 +1,5 @@
 export const META = {
-  "last_updated": "2026-04-08T13:57:09Z",
+  "last_updated": "2026-04-08T14:22:30Z",
   "cities": 10,
   "models": 7,
   "model_names": [
@@ -11,7 +11,7 @@ export const META = {
     "ncep_hrrr_conus",
     "ncep_nbm_conus"
   ],
-  "total_contracts": 120,
-  "total_edges": 7,
+  "total_contracts": 240,
+  "total_edges": 27,
   "edge_threshold": 0.05
 };
