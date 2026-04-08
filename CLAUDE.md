@@ -1,103 +1,94 @@
 # Weather Edge — Project Context
 
-Weather market prediction platform. React 19 + Vite frontend, Python data pipeline.
-- Title: "AA's Weather Edge 2026"
+Weather market prediction platform. React 19 + Vite frontend, Python data pipeline, GitHub Actions automation.
+- Repo: https://github.com/TrickRiggin/Weather
+- Title: "AA's Weather Edge"
+- Domain: weather.trickriggin.ai (Cloudflare Pages)
 - Same family as March Madness, Bats, Hoops, Pucks
+
+## Key Files
+- `src/App.jsx` — React frontend (Scanner, Cities, Guide tabs)
+- `refresh_weather.py` — Python pipeline (OpenMeteo, Kalshi, NWS, AI analysis)
+- Auto-generated JS: `markets.js`, `forecasts.js`, `edges.js`, `observations.js`, `ai_analysis.js`, `meta.js`
+- `.github/workflows/refresh.yml` — Refresh via cron-job.org repository_dispatch
 
 ## Architecture
 
 ### Data Sources
-- **OpenMeteo API** (free tier) — multi-model weather forecasts
-  - HRRR (3km, hourly, best same-day) — primary pace anchor
-  - GFS (global, 6-hourly runs)
-  - ECMWF (European model, gold standard for 3-7 day)
-  - ICON (German DWD model)
-  - JMA (Japanese model)
-  - GEM (Canadian model)
-  - NBM (NWS blend — already an ensemble of ~20 models)
-  - Each model = one "wiseman" in our ensemble
-- **Kalshi API** — weather binary contracts (highs, lows, ranges)
-  - Ticker format: `KXHIGH{CITY}-{DATE}-T{THRESHOLD}` (e.g. KXHIGHLAX-26APR07-T73)
-  - Contract types: high temp above/below, low temp above/below, temp ranges
-  - Cities: ~20 major US cities
-- **NWS Observation API** (free) — actual recorded temperatures for resolution + pace tracking
-- **OpenMeteo Historical API** — for backtesting model accuracy
+- **OpenMeteo API** (paid tier, `OPENMETEO_API_KEY`) — multi-model forecasts in ONE request
+  - 7 models: `gfs_seamless`, `ecmwf_ifs025`, `icon_seamless`, `gem_seamless`, `jma_seamless`, `ncep_hrrr_conus`, `ncep_nbm_conus`
+  - Multi-location + multi-model batched into a single API call
+  - Response keys have model suffix: `temperature_2m_max_gfs_seamless`
+  - HRRR nulls past ~48h, HRRR/NBM are CONUS-only
+- **Kalshi API** — weather binary contracts (NO auth needed for reading)
+  - Base: `https://api.elections.kalshi.com/trade-api/v2`
+  - Series: `KXHIGH{CITY}` (highs), `KXLOWT{CITY}` (lows)
+  - ~6 mutually exclusive contracts per event forming a probability distribution
+  - Midpoint price = implied probability (contracts are $0-$1)
+  - `with_nested_markets=true` is critical on the events endpoint
+- **NWS Observation API** (free) — current temps for pace tracking
+  - Airport stations: KNYC, KLAX, KMDW, KMIA, KDFW, KDEN, KPHL, KATL, KIAH, KPHX
+- **OpenRouter** (`OPENROUTER_API_KEY`) — Claude Sonnet + GPT-4.1-mini for AI analysis
 
-### Core Concept: Ensemble Edge Detection
-Same philosophy as March Madness Three Wisemen, but with weather models instead of AI:
-1. Fetch forecasts from N weather models for each city/day
-2. Build probability distribution from model spread (not just point estimate)
-3. For each Kalshi contract threshold, calculate P(above) from our distribution
-4. Compare our probability vs Kalshi market price
-5. Edge = our_probability - market_implied_probability
-6. Signal: BET YES/NO when edge exceeds threshold (e.g. 5%+)
+### 10 Cities (High-Volume Kalshi Markets)
+NYC, LAX, CHI, MIA, DAL, DEN, PHI, ATL, HOU, PHX
 
-### Key Features (Priority Order)
-1. **Market Scanner** — table of all active Kalshi weather contracts with our edge estimate
-2. **City Dashboard** — per-city forecast detail with model breakdown
-3. **Ensemble Probability Engine** — multi-model distribution -> contract probability
-4. **Pace Tracker** — intraday: current observed temp vs HRRR hourly curve (same-day edge refinement)
-5. **Edge Alerts** — Telegram notifications when edge exceeds threshold
-6. **Historical Accuracy** — did our ensemble beat the market? Track over time
-7. **Model Leaderboard** — which weather models are sharpest for which cities/metrics
-
-### Pipeline Design (Python)
+### Spread Formula
 ```
-refresh_weather.py
-  1. Fetch Kalshi weather contracts (active markets)
-  2. For each city/date with active contracts:
-     a. Fetch OpenMeteo multi-model forecasts
-     b. Fetch NWS current observations (for pace)
-  3. Build ensemble distribution per city/date
-  4. Calculate edge vs each contract threshold
-  5. Write data files to src/ (same pattern as madness)
-  6. Optional: Telegram alerts for high-edge opportunities
+ensemble_mean = avg(model_highs)  # or lows
+ensemble_std = max(std(model_highs), SIGMA_FLOOR)  # SIGMA_FLOOR = 3.5F
+P(above T) = 1 - normCDF((T - ensemble_mean) / ensemble_std)
+edge = our_probability - kalshi_midpoint
+signal = YES/NO when |edge| >= 5%
 ```
 
-### Frontend (React + Vite)
-Same dark theme (#0f172a + amber accents), mobile-friendly.
-
-Tabs:
-- **Scanner** — market table with edge %, signal, volume, expiry countdown
-- **Cities** — per-city detail with model forecasts, hourly curves, pace tracking
-- **Performance** — historical accuracy tracking
-- **Guide** — methodology explanation
-
-### Kalshi Weather Cities (expected)
-Atlanta, Austin, Boston, Chicago, Dallas, Denver, Houston, Las Vegas,
-Los Angeles, Miami, Minneapolis, Nashville, New York, Philadelphia,
-Phoenix, San Antonio, San Francisco, Seattle, St. Louis, Washington DC
-
-### Probability Calculation
-For a threshold T (e.g. "high temp >= 73F"):
-- Get forecast high from each model: [71.1, 72.5, 70.8, 73.2, 71.5, ...]
-- Ensemble mean = mean(forecasts), ensemble std = std(forecasts)
-- If std is too small (models agree), use historical forecast error as floor
-- P(above T) = 1 - normCDF((T - ensemble_mean) / sigma)
-- Edge = P(above T) - kalshi_yes_price
-
-### Temperature Pace (Same-Day)
-For markets expiring today:
-- HRRR gives hourly temperature curve
+### Pace Tracking (Intraday)
+- HRRR gives hourly temperature curve in city's LOCAL timezone
 - NWS gives current observed temperature
-- Compare observed vs where HRRR expected us to be at this hour
-- Pace adjustment: forecast_high + (observed - expected_at_hour)
-- This is the intraday edge signal — catches when reality diverges from forecast
+- pace_delta = observed - HRRR_expected_at_this_hour
+- adjusted_high = HRRR_forecast_high + pace_delta
+- Timezone offsets hardcoded (no pytz): ET=-4, CT=-5, MT=-6, PT=-7, AZ=-7
 
-## UI Preferences
-- Dark theme (#0f172a backgrounds, amber #f59e0b accents)
-- Mobile-friendly
-- Same family aesthetic as Bats/Hoops/Pucks/Madness
+### AI Analysis
+- Claude Sonnet + GPT-4.1-mini via OpenRouter
+- Fed top 15 edge signals + ensemble data
+- Return structured JSON with picks + confidence (STRONG/LEAN/SKIP)
+- Runs on every refresh (fast enough, cheap enough)
 
-## Key Files
-- `src/App.jsx` — Main React app
-- `refresh_weather.py` — Python data pipeline
-- `src/data.js` — Auto-generated forecast data
-- `src/markets.js` — Auto-generated Kalshi market data
+## Refresh Schedule
+- **Every 20-30 min** — cron-job.org -> `repository_dispatch` (type: `light-refresh`)
+- Single workflow handles everything (no heavy/light split — pipeline runs in ~45s)
+- Full pipeline: OpenMeteo forecasts -> ensemble -> Kalshi markets -> edges -> NWS obs -> pace -> AI analysis -> write src/
 
-## Important Notes
-- OpenMeteo is free but rate-limited — batch requests, cache aggressively
-- Kalshi weather markets typically expire same-day or next-day
-- HRRR updates every hour — most valuable for same-day markets
-- GFS/ECMWF update every 6-12 hours — better for next-day+
-- Temperature forecast error is roughly gaussian with sigma ~2-4F depending on model/horizon
+## UI
+- Dark theme (#0f172a backgrounds, blue/cyan #3b82f6/#06b6d4 gradient accents)
+- Mobile-friendly, same family aesthetic as other AA apps
+- **Scanner tab**: Top signal cards + sortable/filterable market table
+- **Cities tab**: City selector with current temps, 3-day forecast, model breakdown, pace indicator, per-city edges
+- **Guide tab**: Methodology explanation
+
+## Important Gotchas
+- `yes_bid=0.0` is falsy in Python — use `is not None` checks, not truthiness
+- Settled/dead contracts (bid=0, ask=0.01) must be filtered or they create phantom edges
+- HRRR hourly times are in city LOCAL timezone (OpenMeteo `timezone=auto`), NWS observations are UTC — must convert
+- Kalshi "between" contracts are narrow 2-degree buckets — with sigma=3.5F, any single bucket gets ~10-15% max probability
+- SIGMA_FLOOR=3.5F is a global floor; tropical cities (MIA) have lower forecast error for lows than continental cities (DEN)
+- JMA model is coarsest for US locations (55km) — frequently the outlier
+- OpenMeteo model name gotcha: `ncep_hrrr_conus` not `hrrr_conus`, `ncep_nbm_conus` not `nbm_conus`
+- Kalshi rate limits: 0.5s delay between series fetches to avoid 429s
+
+## Secrets (GitHub + .env)
+- `OPENMETEO_API_KEY` — paid tier, avoids rate limits
+- `OPENROUTER_API_KEY` — Claude/GPT AI analysis
+- `KALSHI_API_KEY` — not currently used (read-only is unauthenticated) but available
+- `KALSHI_RSA_KEY` — same, for future trading integration
+
+## Future Ideas
+- City-specific sigma floors (calibrate from historical forecast error)
+- Weight models differently by forecast horizon (HRRR for day 0, ECMWF for day 2+)
+- Historical accuracy tracking (did our ensemble beat the market?)
+- Model leaderboard (which models are sharpest per city/metric?)
+- Pace-adjusted ensemble feeding back into edge calculation
+- Telegram alerts for high-edge opportunities
+- Expand to 20 cities (all Kalshi markets)
+- Rain/snow/wind contract support
