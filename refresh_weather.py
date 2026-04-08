@@ -686,25 +686,40 @@ Respond in JSON format:
                     "messages": [{"role": "user", "content": prompt}],
                     "temperature": 0.3,
                     "max_tokens": 1500,
+                    "response_format": {"type": "json_object"},
                 },
                 timeout=60,
             )
             resp.raise_for_status()
             content = resp.json()["choices"][0]["message"]["content"]
 
-            # Parse JSON from response (handle markdown code blocks)
+            # Multi-stage JSON parsing
             content = content.strip()
             if content.startswith("```"):
-                content = content.split("\n", 1)[1].rsplit("```", 1)[0]
+                content = content.split("\n", 1)[1].rsplit("```", 1)[0].strip()
 
-            parsed = json.loads(content)
-            results[model_name] = parsed
-            pick_count = len(parsed.get("picks", []))
-            print(f"  {model_name}: {pick_count} picks — {parsed.get('summary', '')[:80]}")
+            parsed = None
+            # Stage 1: direct parse
+            try:
+                parsed = json.loads(content)
+            except json.JSONDecodeError:
+                pass
+            # Stage 2: find first { to last }
+            if not parsed:
+                try:
+                    start = content.index("{")
+                    end = content.rindex("}") + 1
+                    parsed = json.loads(content[start:end])
+                except (ValueError, json.JSONDecodeError):
+                    pass
 
-        except json.JSONDecodeError:
-            print(f"  {model_name}: got response but failed to parse JSON")
-            results[model_name] = {"summary": content[:200], "picks": []}
+            if parsed:
+                results[model_name] = parsed
+                pick_count = len(parsed.get("picks", []))
+                print(f"  {model_name}: {pick_count} picks — {parsed.get('summary', '')[:80]}")
+            else:
+                print(f"  {model_name}: got response but failed to parse JSON")
+                results[model_name] = {"summary": content[:300], "picks": []}
         except Exception as e:
             print(f"  {model_name}: ERROR {e}")
 
