@@ -64,16 +64,39 @@ function App() {
   const [filterCity, setFilterCity] = useState("all");
   const [filterType, setFilterType] = useState("all");
   const [sortBy, setSortBy] = useState("edge");
+  const [filterDate, setFilterDate] = useState("today");
   const [resultsView, setResultsView] = useState("last100");
 
-  // ========== DERIVED DATA ==========
-  const signals = useMemo(() =>
-    (EDGES || []).filter(e => e.signal).sort((a, b) => Math.abs(b.edge) - Math.abs(a.edge)),
+  // ========== HELPERS ==========
+  // Available dates from edges, sorted
+  const availableDates = useMemo(() =>
+    [...new Set((EDGES || []).map(e => e.date).filter(Boolean))].sort(),
     []
+  );
+  const todayDate = availableDates[0] || "";
+
+  // Kalshi URL builder — links to the event page (one URL per city+date+type)
+  const kalshiUrl = (edge) => {
+    if (!edge?.ticker) return "#";
+    const eventTicker = edge.ticker.replace(/-[^-]+$/, "");
+    const seriesTicker = eventTicker.replace(/-.*$/, "");
+    const cityName = (CITY_NAMES[edge.city] || "").toLowerCase().replace(/\s+/g, "-");
+    const typeSlug = edge.type === "high" ? "highest" : "lowest";
+    return `https://kalshi.com/markets/${seriesTicker.toLowerCase()}/${typeSlug}-temperature-in-${cityName}/${eventTicker.toLowerCase()}`;
+  };
+
+  // ========== DERIVED DATA ==========
+  const activeDate = filterDate === "today" ? todayDate : filterDate === "all" ? null : filterDate;
+
+  const signals = useMemo(() =>
+    (EDGES || []).filter(e => e.signal && (!activeDate || e.date === activeDate))
+      .sort((a, b) => Math.abs(b.edge) - Math.abs(a.edge)),
+    [activeDate]
   );
 
   const allEdges = useMemo(() => {
     let filtered = [...(EDGES || [])];
+    if (activeDate) filtered = filtered.filter(e => e.date === activeDate);
     if (filterCity !== "all") filtered = filtered.filter(e => e.city === filterCity);
     if (filterType !== "all") filtered = filtered.filter(e => e.type === filterType);
 
@@ -152,6 +175,12 @@ function App() {
           <div>
             {/* Filters */}
             <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
+              <select value={filterDate} onChange={e => setFilterDate(e.target.value)}
+                style={{ padding: "6px 12px", background: "#1e293b", color: "#e2e8f0", border: "1px solid #334155", borderRadius: 8, fontSize: 12 }}>
+                <option value="today">Today ({todayDate?.slice(5)})</option>
+                {availableDates.slice(1).map(d => <option key={d} value={d}>{d.slice(5)}</option>)}
+                <option value="all">All Dates</option>
+              </select>
               <select value={filterCity} onChange={e => setFilterCity(e.target.value)}
                 style={{ padding: "6px 12px", background: "#1e293b", color: "#e2e8f0", border: "1px solid #334155", borderRadius: 8, fontSize: 12 }}>
                 <option value="all">All Cities</option>
@@ -328,8 +357,8 @@ function App() {
               const allCityEdges = (EDGES || []).filter(e => e.city === selectedCity);
               const obsStale = obs.obs_age_min != null && obs.obs_age_min > 90;
 
-              // Helper: build Kalshi URL from contract ticker
-              const kalshiUrl = (ticker) => `https://kalshi.com/markets/${(ticker || "").toLowerCase()}`;
+              // Kalshi event URL for a section header
+              const kalshiEventUrl = (edges) => edges[0] ? kalshiUrl(edges[0]) : "#";
 
               // Helper: model range bar
               const ModelRange = ({ models, mean, std, typeColor }) => {
@@ -422,8 +451,8 @@ function App() {
                     const lowEdges = dateEdges.filter(e => e.type === "low");
 
                     // Find the event ticker for Kalshi link (from first edge)
-                    const highEvent = highEdges[0]?.ticker?.replace(/-[^-]+$/, "") || "";
-                    const lowEvent = lowEdges[0]?.ticker?.replace(/-[^-]+$/, "") || "";
+                    const highEventUrl = highEdges[0] ? kalshiUrl(highEdges[0]) : "";
+                    const lowEventUrl = lowEdges[0] ? kalshiUrl(lowEdges[0]) : "";
 
                     return (
                     <div key={date} style={{ background: "#0f172a", borderRadius: 12, padding: "16px 20px", marginBottom: 12, border: "1px solid #1e293b" }}>
@@ -436,7 +465,7 @@ function App() {
                       <div style={{ marginBottom: 20 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                           <span style={{ fontSize: 11, fontWeight: 800, color: "#ef4444", letterSpacing: 2 }}>HIGH</span>
-                          {highEvent && <a href={kalshiUrl(highEvent)} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, fontWeight: 700, color: "#64748b", textDecoration: "none", letterSpacing: 1 }}>KALSHI LIVE &rarr;</a>}
+                          {highEventUrl && <a href={highEventUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, fontWeight: 700, color: "#64748b", textDecoration: "none", letterSpacing: 1 }}>KALSHI LIVE &rarr;</a>}
                         </div>
                         <ModelRange models={ens.high_models} mean={ens.high_mean} std={ens.high_std} typeColor="#ef4444" />
                         {/* Coverage Ladder */}
@@ -447,7 +476,7 @@ function App() {
                               const edgeVal = e.edge || 0;
                               const isSignal = e.signal != null;
                               return (
-                              <a key={i} href={kalshiUrl(e.ticker)} target="_blank" rel="noopener noreferrer"
+                              <a key={i} href={kalshiUrl(e)} target="_blank" rel="noopener noreferrer"
                                 style={{ flex: "1 1 72px", minWidth: 72, maxWidth: 120, padding: "8px 6px", borderRadius: 8, textAlign: "center", textDecoration: "none",
                                   background: isSignal ? `${getSignalColor(e.signal)}0d` : "#0a0f1a",
                                   border: `1px solid ${isSignal ? getSignalColor(e.signal) + "55" : "#1e293b"}` }}>
@@ -471,7 +500,7 @@ function App() {
                         <div>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                             <span style={{ fontSize: 11, fontWeight: 800, color: "#3b82f6", letterSpacing: 2 }}>LOW</span>
-                            {lowEvent && <a href={kalshiUrl(lowEvent)} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, fontWeight: 700, color: "#64748b", textDecoration: "none", letterSpacing: 1 }}>KALSHI LIVE &rarr;</a>}
+                            {lowEventUrl && <a href={lowEventUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, fontWeight: 700, color: "#64748b", textDecoration: "none", letterSpacing: 1 }}>KALSHI LIVE &rarr;</a>}
                           </div>
                           <ModelRange models={ens.low_models} mean={ens.low_mean} std={ens.low_std} typeColor="#3b82f6" />
                           {/* Coverage Ladder */}
@@ -482,7 +511,7 @@ function App() {
                                 const edgeVal = e.edge || 0;
                                 const isSignal = e.signal != null;
                                 return (
-                                <a key={i} href={kalshiUrl(e.ticker)} target="_blank" rel="noopener noreferrer"
+                                <a key={i} href={kalshiUrl(e)} target="_blank" rel="noopener noreferrer"
                                   style={{ flex: "1 1 72px", minWidth: 72, maxWidth: 120, padding: "8px 6px", borderRadius: 8, textAlign: "center", textDecoration: "none",
                                     background: isSignal ? `${getSignalColor(e.signal)}0d` : "#0a0f1a",
                                     border: `1px solid ${isSignal ? getSignalColor(e.signal) + "55" : "#1e293b"}` }}>
