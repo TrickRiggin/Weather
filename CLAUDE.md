@@ -18,9 +18,10 @@ Weather market prediction platform. React 19 + Vite frontend, Python data pipeli
 
 ### Data Sources
 - **OpenMeteo API** (paid tier, `OPENMETEO_API_KEY`) — multi-model forecasts in ONE request
-  - 7 models: `gfs_seamless`, `ecmwf_ifs025`, `icon_seamless`, `gem_seamless`, `jma_seamless`, `ncep_hrrr_conus`, `ncep_nbm_conus`
+  - 3 models: `ncep_hrrr_conus` (3km, best day 0-1), `ncep_nbm_conus` (2.5km, 31-model blend), `ecmwf_ifs025` (14km, best global)
+  - Dropped GFS (redundant, NBM already includes it), ICON (Europe-optimized), GEM (Canada-optimized), JMA (55km noise)
   - Multi-location + multi-model batched into a single API call
-  - Response keys have model suffix: `temperature_2m_max_gfs_seamless`
+  - Response keys have model suffix: `temperature_2m_max_ncep_hrrr_conus`
   - HRRR nulls past ~48h, HRRR/NBM are CONUS-only
 - **Kalshi API** — weather binary contracts (NO auth needed for reading)
   - Base: `https://api.elections.kalshi.com/trade-api/v2`
@@ -65,7 +66,7 @@ signal = YES/NO when |edge| >= 5%
 ## UI
 - Dark theme (#0f172a backgrounds, blue/cyan #3b82f6/#06b6d4 gradient accents)
 - Mobile-friendly, same family aesthetic as other AA apps
-- **Scanner tab**: Top signal cards + sortable/filterable market table
+- **Scanner tab**: Paywall-style market cards (recommendation + forecast/threshold/gap + weather data + AI picks) + simplified market table
 - **Cities tab**: City selector with current temps, 3-day forecast, model breakdown, pace indicator, per-city edges
 - **Results tab**: Track record — hero stats (win rate, record, streak, P&L, ROI), edge tier breakdown with progress bars, YES/NO direction cards, per-pick table with actual temps
 - **Guide tab**: Methodology explanation
@@ -76,8 +77,9 @@ signal = YES/NO when |edge| >= 5%
 - HRRR hourly times are in city LOCAL timezone (OpenMeteo `timezone=auto`), NWS observations are UTC — must convert
 - Kalshi "between" contracts are narrow 2-degree buckets — with sigma=3.5F, any single bucket gets ~10-15% max probability
 - SIGMA_FLOOR=3.5F is a global floor; tropical cities (MIA) have lower forecast error for lows than continental cities (DEN)
-- JMA model is coarsest for US locations (55km) — frequently the outlier
+- NBM is already a 31-model blend — including raw GFS/ICON/GEM/JMA alongside it dilutes signal (we dropped them)
 - OpenMeteo model name gotcha: `ncep_hrrr_conus` not `hrrr_conus`, `ncep_nbm_conus` not `nbm_conus`
+- With 3 models, HRRR nulls past 48h → day 2+ has only NBM + ECMWF (2 models, SIGMA_FLOOR dominates std)
 - Kalshi rate limits: 0.5s delay between series fetches to avoid 429s
 
 ## Secrets (GitHub + .env)
@@ -97,8 +99,7 @@ signal = YES/NO when |edge| >= 5%
 
 ## Future Ideas
 - City-specific sigma floors (calibrate from historical forecast error — now possible with backtest data)
-- Weight models differently by forecast horizon (HRRR for day 0, ECMWF for day 2+)
-- Model leaderboard (which models are sharpest per city/metric? — track per-model forecasts in signals)
+- Horizon-based model weighting (HRRR heavy for day 0, ECMWF heavy for day 2+)
 - Pace-adjusted ensemble feeding back into edge calculation
 - Telegram alerts for high-edge opportunities
 - Expand to 20 cities (all Kalshi markets)

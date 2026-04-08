@@ -15,15 +15,11 @@ const CITY_NAMES = {
 };
 
 const MODEL_LABELS = {
-  gfs_seamless: "GFS", ecmwf_ifs025: "ECMWF", icon_seamless: "ICON",
-  gem_seamless: "GEM", jma_seamless: "JMA", ncep_hrrr_conus: "HRRR",
-  ncep_nbm_conus: "NBM",
+  ncep_hrrr_conus: "HRRR", ncep_nbm_conus: "NBM", ecmwf_ifs025: "ECMWF",
 };
 
 const MODEL_COLORS = {
-  gfs_seamless: "#ef4444", ecmwf_ifs025: "#22c55e", icon_seamless: "#3b82f6",
-  gem_seamless: "#f59e0b", jma_seamless: "#a78bfa", ncep_hrrr_conus: "#06b6d4",
-  ncep_nbm_conus: "#f97316",
+  ncep_hrrr_conus: "#06b6d4", ncep_nbm_conus: "#f97316", ecmwf_ifs025: "#22c55e",
 };
 
 // ========== HELPERS ==========
@@ -56,6 +52,38 @@ const timeUntil = (closeTime) => {
   if (hours > 24) return `${Math.floor(hours / 24)}d`;
   if (hours > 0) return `${hours}h ${mins}m`;
   return `${mins}m`;
+};
+
+// Card helpers
+const getBuyPrice = (e) => {
+  if (e.signal === "YES") return e.yes_ask;
+  if (e.signal === "NO") return 1 - (e.yes_bid || 0);
+  return null;
+};
+
+const getWinProb = (e) => {
+  if (e.signal === "YES") return e.our_prob;
+  if (e.signal === "NO") return 1 - e.our_prob;
+  return null;
+};
+
+const getForecastData = (e) => {
+  const cityFcst = FORECASTS?.[e.city]?.[e.date];
+  if (!cityFcst) return { mean: null, std: null, models: null, modelCount: null };
+  return e.type === "high"
+    ? { mean: cityFcst.high_mean, std: cityFcst.high_std, models: cityFcst.high_models, modelCount: cityFcst.model_count }
+    : { mean: cityFcst.low_mean, std: cityFcst.low_std, models: cityFcst.low_models, modelCount: cityFcst.model_count };
+};
+
+const findAiPick = (e) => {
+  for (const [model, data] of Object.entries(AI_ANALYSIS || {})) {
+    const pick = data.picks?.find(p =>
+      p.city === e.city_name && p.type === e.type &&
+      String(p.threshold).replace(/F$/i, "") === String(e.threshold)
+    );
+    if (pick) return { model, ...pick };
+  }
+  return null;
 };
 
 function App() {
@@ -130,7 +158,7 @@ function App() {
             AA's WEATHER EDGE
           </h1>
           <p style={{ color: "#64748b", fontSize: 11, margin: "4px 0 0", letterSpacing: 2, textTransform: "uppercase" }}>
-            Multi-Model Ensemble vs Kalshi Markets
+            HRRR + NBM + ECMWF vs Kalshi Markets
           </p>
 
           {/* Stats bar */}
@@ -203,46 +231,167 @@ function App() {
               </span>
             </div>
 
-            {/* Signal Cards (top edges) */}
+            {/* ===== SIGNAL CARDS — Paywall-Style Market Cards ===== */}
             {signals.length > 0 && filterCity === "all" && filterType === "all" && (
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", letterSpacing: 2, textTransform: "uppercase", marginBottom: 10 }}>
                   Top Signals
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 10 }}>
-                  {signals.slice(0, 6).map((e, i) => {
-                    const badge = getConfidenceBadge(e.edge);
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 12 }}>
+                  {signals.slice(0, 8).map((e, i) => {
                     const obs = OBSERVATIONS?.[e.city] || {};
+                    const fcst = getForecastData(e);
+                    const isToday = e.date === todayDate;
+                    const hasPace = isToday && e.type === "high" && obs.adjusted_high != null;
+                    const forecastVal = hasPace ? obs.adjusted_high : fcst.mean;
+                    const forecastLabel = hasPace ? "PACE ADJ" : "FORECAST";
+
+                    const buyPrice = getBuyPrice(e);
+                    const winProb = getWinProb(e);
+                    const realEV = (buyPrice && buyPrice > 0 && winProb != null) ? ((winProb / buyPrice - 1) * 100) : 0;
+
+                    // Parse threshold for gap calc
+                    const isBetween = typeof e.threshold === "string" && String(e.threshold).includes("-");
+                    const thresh = isBetween
+                      ? (() => { const parts = String(e.threshold).split("-").map(Number); return (parts[0] + parts[1]) / 2; })()
+                      : parseFloat(e.threshold);
+                    const gap = (forecastVal != null && !isNaN(thresh)) ? Math.abs(forecastVal - thresh) : null;
+                    const gapFavorable = !isNaN(thresh) && forecastVal != null && (
+                      (e.signal === "YES" && e.strike_type === "less" && forecastVal < thresh) ||
+                      (e.signal === "YES" && e.strike_type === "greater" && forecastVal > thresh) ||
+                      (e.signal === "NO" && e.strike_type === "less" && forecastVal >= thresh) ||
+                      (e.signal === "NO" && e.strike_type === "greater" && forecastVal <= thresh)
+                    );
+
+                    const aiPick = findAiPick(e);
+                    const sigColor = e.signal === "YES" ? "#22c55e" : "#ef4444";
+                    const sigBg = e.signal === "YES" ? "rgba(34,197,94,0.08)" : "rgba(239,68,68,0.08)";
+                    const sigBorder = e.signal === "YES" ? "rgba(34,197,94,0.2)" : "rgba(239,68,68,0.2)";
+
                     return (
-                      <div key={i} style={{ background: "#0f172a", borderRadius: 10, padding: "12px 16px", border: `1px solid ${getSignalColor(e.signal)}33`, cursor: "pointer" }}
-                        onClick={() => { setSelectedCity(e.city); setTab("cities"); }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: "#f1f5f9" }}>{e.city_name}</span>
-                          <span style={{ fontSize: 11, fontWeight: 800, padding: "2px 8px", borderRadius: 4, background: getSignalColor(e.signal), color: "#fff" }}>
-                            {e.signal}
-                          </span>
-                        </div>
-                        <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 4 }}>
-                          {e.type === "high" ? "High" : "Low"} temp {e.strike_type === "greater" ? "> " : e.strike_type === "less" ? "< " : ""}{e.threshold}F
-                        </div>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                      <div key={i} style={{ background: "#0f172a", borderRadius: 12, overflow: "hidden", border: `1px solid ${sigBorder}` }}>
+
+                        {/* Header */}
+                        <div style={{ padding: "12px 16px 8px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                           <div>
-                            <span style={{ fontSize: 11, color: "#64748b" }}>Us: </span>
-                            <span style={{ fontSize: 13, fontWeight: 700, color: "#e2e8f0" }}>{pct(e.our_prob)}</span>
-                            <span style={{ fontSize: 11, color: "#64748b", margin: "0 4px" }}>vs</span>
-                            <span style={{ fontSize: 13, fontWeight: 700, color: "#e2e8f0" }}>{pct(e.market_mid)}</span>
-                            <span style={{ fontSize: 11, color: "#64748b" }}> Mkt</span>
+                            <div style={{ fontSize: 15, fontWeight: 800, color: "#f1f5f9" }}>
+                              {e.city_name} <span style={{ color: "#475569" }}>&mdash;</span> <span style={{ color: e.type === "high" ? "#ef4444" : "#3b82f6" }}>{e.type.toUpperCase()}</span>
+                            </div>
+                            <div style={{ fontSize: 10, color: "#475569", marginTop: 2, fontFamily: "'Courier New', monospace" }}>
+                              {e.ticker}
+                            </div>
                           </div>
-                          <div>
-                            <span style={{ fontSize: 14, fontWeight: 800, color: getEdgeColor(e.edge) }}>{signPct(e.edge)}</span>
-                            {badge && <span style={{ fontSize: 9, fontWeight: 800, marginLeft: 6, padding: "2px 6px", borderRadius: 4, background: badge.bg, color: "#fff" }}>{badge.label}</span>}
+                          <div style={{ textAlign: "right" }}>
+                            <div style={{ fontSize: 11, color: "#64748b" }}>{e.date?.slice(5)}</div>
+                            <a href={kalshiUrl(e)} target="_blank" rel="noopener noreferrer"
+                              onClick={ev => ev.stopPropagation()}
+                              style={{ fontSize: 10, color: "#f59e0b", textDecoration: "none", fontWeight: 700 }}>
+                              Kalshi &rarr;
+                            </a>
                           </div>
                         </div>
-                        {obs.temp_f && (
-                          <div style={{ fontSize: 10, color: "#475569", marginTop: 4 }}>
-                            Current: {obs.temp_f}F {obs.pace_delta != null && `(${obs.pace_delta > 0 ? "+" : ""}${obs.pace_delta}F pace)`}
+
+                        {/* Recommendation Banner */}
+                        <div style={{ margin: "0 12px", padding: "10px 14px", borderRadius: 8, background: sigBg, border: `1px solid ${sigBorder}` }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <span style={{ fontSize: 15, fontWeight: 900, color: sigColor }}>
+                              BET {e.signal} @ {buyPrice != null ? `${Math.round(buyPrice * 100)}¢` : "—"}
+                            </span>
+                            <span style={{ fontSize: 13, fontWeight: 800, color: "#f59e0b" }}>
+                              +{realEV.toFixed(0)}% EV
+                            </span>
+                          </div>
+                          <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>
+                            {winProb != null ? `${(winProb * 100).toFixed(0)}% probability of winning` : ""}
+                          </div>
+                        </div>
+
+                        {/* Hero Stats: Forecast / Threshold / Gap */}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", margin: "12px 12px 0", background: "#0a0f1a", borderRadius: 8, overflow: "hidden" }}>
+                          <div style={{ padding: "10px 8px", textAlign: "center", borderRight: "1px solid #1e293b" }}>
+                            <div style={{ fontSize: 9, fontWeight: 700, color: "#64748b", letterSpacing: 1, marginBottom: 4 }}>{forecastLabel}</div>
+                            <div style={{ fontSize: 20, fontWeight: 900, color: "#e2e8f0" }}>
+                              {forecastVal != null ? `${forecastVal.toFixed(1)}°` : "—"}
+                            </div>
+                          </div>
+                          <div style={{ padding: "10px 8px", textAlign: "center", borderRight: "1px solid #1e293b" }}>
+                            <div style={{ fontSize: 9, fontWeight: 700, color: "#64748b", letterSpacing: 1, marginBottom: 4 }}>THRESHOLD</div>
+                            <div style={{ fontSize: 20, fontWeight: 900, color: "#94a3b8" }}>
+                              {e.strike_type === "less" ? "<" : e.strike_type === "greater" ? ">" : ""}{e.threshold}°
+                            </div>
+                          </div>
+                          <div style={{ padding: "10px 8px", textAlign: "center" }}>
+                            <div style={{ fontSize: 9, fontWeight: 700, color: "#64748b", letterSpacing: 1, marginBottom: 4 }}>GAP</div>
+                            <div style={{ fontSize: 20, fontWeight: 900, color: gap != null ? (gapFavorable ? "#22c55e" : "#f59e0b") : "#64748b" }}>
+                              {gap != null ? `${gap.toFixed(1)}°` : "—"}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Weather Data */}
+                        <div style={{ padding: "10px 16px 6px", fontSize: 11 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid #1e293b" }}>
+                            <span style={{ color: "#64748b" }}>Ensemble Mean</span>
+                            <span style={{ color: "#e2e8f0", fontWeight: 600 }}>
+                              {fcst.mean != null ? `${fcst.mean.toFixed(1)}°F` : "—"}
+                              {fcst.modelCount && <span style={{ color: "#475569", marginLeft: 4 }}>({fcst.modelCount} models)</span>}
+                            </span>
+                          </div>
+                          {isToday && obs.temp_f != null && (
+                            <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid #1e293b" }}>
+                              <span style={{ color: "#64748b" }}>Current Observed</span>
+                              <span style={{ color: "#e2e8f0", fontWeight: 600 }}>
+                                {obs.temp_f}°F
+                                {obs.station && <span style={{ color: "#475569", marginLeft: 4 }}>({obs.station})</span>}
+                              </span>
+                            </div>
+                          )}
+                          {isToday && obs.pace_delta != null && (
+                            <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid #1e293b" }}>
+                              <span style={{ color: "#64748b" }}>Pace</span>
+                              <span style={{ fontWeight: 700, color: obs.pace_delta > 1 ? "#ef4444" : obs.pace_delta < -1 ? "#3b82f6" : "#64748b" }}>
+                                {obs.pace_delta > 0 ? "+" : ""}{obs.pace_delta.toFixed(1)}°F {obs.pace_delta > 1 ? "RUNNING HOT" : obs.pace_delta < -1 ? "RUNNING COLD" : "ON PACE"}
+                              </span>
+                            </div>
+                          )}
+                          {hasPace && obs.hrrr_high != null && (
+                            <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid #1e293b" }}>
+                              <span style={{ color: "#64748b" }}>HRRR Forecast</span>
+                              <span style={{ color: "#e2e8f0", fontWeight: 600 }}>{obs.hrrr_high}°F</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* AI Pick (if matched) */}
+                        {aiPick && (
+                          <div style={{ padding: "6px 16px 10px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                              <span style={{ fontSize: 10, fontWeight: 800, color: aiPick.model === "claude" ? "#a78bfa" : "#22c55e", textTransform: "uppercase" }}>
+                                {aiPick.model}
+                              </span>
+                              {aiPick.confidence && aiPick.confidence !== "SKIP" && (
+                                <span style={{ fontSize: 9, fontWeight: 800, padding: "1px 6px", borderRadius: 3,
+                                  background: aiPick.confidence === "STRONG" ? "#22c55e" : aiPick.confidence === "LEAN" ? "#3b82f6" : "#64748b",
+                                  color: "#fff" }}>{aiPick.confidence}</span>
+                              )}
+                              <span style={{ fontSize: 9, fontWeight: 800, padding: "1px 6px", borderRadius: 3,
+                                background: aiPick.signal === e.signal ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)",
+                                color: aiPick.signal === e.signal ? "#22c55e" : "#ef4444",
+                                border: `1px solid ${aiPick.signal === e.signal ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)"}` }}>
+                                {aiPick.signal === e.signal ? "AGREES" : `SAYS ${aiPick.signal}`}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: 10, color: "#64748b", lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+                              {aiPick.reasoning}
+                            </div>
                           </div>
                         )}
+
+                        {/* Footer: Volume + Expires */}
+                        <div style={{ padding: "8px 16px", borderTop: "1px solid #1e293b", display: "flex", justifyContent: "space-between", fontSize: 10, color: "#475569" }}>
+                          <span>Vol: {(e.volume || 0).toLocaleString()}</span>
+                          <span>{timeUntil(e.close_time)}</span>
+                        </div>
                       </div>
                     );
                   })}
@@ -250,76 +399,67 @@ function App() {
               </div>
             )}
 
-            {/* AI Analysis */}
-            {AI_ANALYSIS && Object.keys(AI_ANALYSIS).length > 0 && (
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>
-                  AI Analysis
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(400px, 1fr))", gap: 10 }}>
-                  {Object.entries(AI_ANALYSIS).map(([model, data]) => (
-                    <div key={model} style={{ background: "#0f172a", borderRadius: 10, padding: "14px 16px", border: "1px solid #1e293b" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                        <span style={{ fontSize: 13, fontWeight: 800, color: model === "claude" ? "#a78bfa" : "#22c55e", textTransform: "uppercase" }}>{model}</span>
-                        {data.picks && <span style={{ fontSize: 10, color: "#64748b" }}>{data.picks.length} picks</span>}
-                      </div>
-                      {data.summary && <p style={{ fontSize: 12, color: "#94a3b8", lineHeight: 1.5, marginBottom: 8 }}>{data.summary}</p>}
-                      {data.picks?.map((pick, i) => (
-                        <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", borderTop: "1px solid #1e293b" }}>
-                          <span style={{ fontSize: 11, color: "#e2e8f0" }}>
-                            {pick.city} {pick.type} {String(pick.threshold).replace(/F$/i, "")}F
-                          </span>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <span style={{ fontSize: 10, fontWeight: 800, padding: "1px 6px", borderRadius: 4,
-                              background: pick.confidence === "STRONG" ? "#22c55e" : pick.confidence === "LEAN" ? "#3b82f6" : "#64748b",
-                              color: "#fff" }}>{pick.confidence}</span>
-                            <span style={{ fontSize: 10, fontWeight: 800, padding: "1px 6px", borderRadius: 4,
-                              background: pick.signal === "YES" ? "#22c55e" : "#ef4444", color: "#fff" }}>{pick.signal}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ))}
-                </div>
+            {/* AI Insight Summary (compact — picks are on cards) */}
+            {AI_ANALYSIS && Object.keys(AI_ANALYSIS).length > 0 && signals.length > 0 && filterCity === "all" && filterType === "all" && (
+              <div style={{ marginBottom: 20, padding: "12px 16px", background: "#0f172a", borderRadius: 10, border: "1px solid #1e293b" }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "#64748b", letterSpacing: 2, textTransform: "uppercase", marginBottom: 8 }}>AI Insights</div>
+                {Object.entries(AI_ANALYSIS).map(([model, data]) => data.summary && (
+                  <div key={model} style={{ marginBottom: 6 }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: model === "claude" ? "#a78bfa" : "#22c55e", textTransform: "uppercase", marginRight: 6 }}>{model}:</span>
+                    <span style={{ fontSize: 11, color: "#94a3b8", lineHeight: 1.5 }}>{data.summary}</span>
+                  </div>
+                ))}
               </div>
             )}
 
-            {/* Full Market Table */}
+            {/* ===== MARKET TABLE ===== */}
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                 <thead>
                   <tr style={{ borderBottom: "1px solid #334155" }}>
-                    {["City", "Date", "Type", "Threshold", "Our Prob", "Market", "Edge", "EV", "Signal", "Expires"].map(h => (
+                    {["Market", "Edge", "EV", "Rec", "Price", "Vol", "Expires"].map(h => (
                       <th key={h} style={{ padding: "8px 6px", textAlign: "left", color: "#64748b", fontWeight: 700, letterSpacing: 0.5, fontSize: 10, textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {allEdges.slice(0, 100).map((e, i) => (
-                    <tr key={i} style={{ borderBottom: "1px solid #1e293b", cursor: "pointer", transition: "background 0.15s" }}
-                      onMouseEnter={ev => ev.currentTarget.style.background = "#1e293b"}
-                      onMouseLeave={ev => ev.currentTarget.style.background = "transparent"}
-                      onClick={() => { setSelectedCity(e.city); setTab("cities"); }}>
-                      <td style={{ padding: "8px 6px", fontWeight: 600, color: "#f1f5f9" }}>{e.city_name}</td>
-                      <td style={{ padding: "8px 6px", color: "#94a3b8" }}>{e.date?.slice(5)}</td>
-                      <td style={{ padding: "8px 6px" }}>
-                        <span style={{ fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 4, background: e.type === "high" ? "#ef444422" : "#3b82f622", color: e.type === "high" ? "#ef4444" : "#3b82f6" }}>
-                          {e.type === "high" ? "HIGH" : "LOW"}
-                        </span>
-                      </td>
-                      <td style={{ padding: "8px 6px", fontWeight: 700 }}>{e.threshold}F</td>
-                      <td style={{ padding: "8px 6px", fontWeight: 600 }}>{pct(e.our_prob, 1)}</td>
-                      <td style={{ padding: "8px 6px", color: "#94a3b8" }}>{pct(e.market_mid, 1)}</td>
-                      <td style={{ padding: "8px 6px", fontWeight: 800, color: getEdgeColor(e.edge) }}>{signPct(e.edge)}</td>
-                      <td style={{ padding: "8px 6px", fontWeight: 600, color: Math.abs(e.ev) > 0.5 ? "#22c55e" : "#94a3b8" }}>{signPct(e.ev)}</td>
-                      <td style={{ padding: "8px 6px" }}>
-                        {e.signal ? (
-                          <span style={{ fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 4, background: getSignalColor(e.signal), color: "#fff" }}>{e.signal}</span>
-                        ) : <span style={{ color: "#334155" }}>—</span>}
-                      </td>
-                      <td style={{ padding: "8px 6px", color: "#64748b", fontSize: 11 }}>{timeUntil(e.close_time)}</td>
-                    </tr>
-                  ))}
+                  {allEdges.slice(0, 100).map((e, i) => {
+                    const bp = getBuyPrice(e);
+                    const ev = e.ev || 0;
+                    return (
+                      <tr key={i} style={{ borderBottom: "1px solid #1e293b", cursor: "pointer", transition: "background 0.15s" }}
+                        onMouseEnter={ev => ev.currentTarget.style.background = "#1e293b"}
+                        onMouseLeave={ev => ev.currentTarget.style.background = "transparent"}
+                        onClick={() => { setSelectedCity(e.city); setTab("cities"); }}>
+                        <td style={{ padding: "8px 6px" }}>
+                          <span style={{ fontWeight: 600, color: "#f1f5f9" }}>{e.city}</span>
+                          <span style={{ fontSize: 10, fontWeight: 700, marginLeft: 5, padding: "1px 5px", borderRadius: 3,
+                            background: e.type === "high" ? "#ef444422" : "#3b82f622",
+                            color: e.type === "high" ? "#ef4444" : "#3b82f6" }}>
+                            {e.type === "high" ? "H" : "L"}
+                          </span>
+                          <span style={{ color: "#94a3b8", marginLeft: 5 }}>
+                            {e.strike_type === "less" ? "<" : e.strike_type === "greater" ? ">" : ""}{e.threshold}°
+                          </span>
+                          <span style={{ color: "#475569", marginLeft: 5, fontSize: 10 }}>{e.date?.slice(5)}</span>
+                        </td>
+                        <td style={{ padding: "8px 6px", fontWeight: 800, color: getEdgeColor(e.edge) }}>{signPct(e.edge)}</td>
+                        <td style={{ padding: "8px 6px", fontWeight: 600, color: ev > 0.5 ? "#f59e0b" : "#94a3b8" }}>
+                          {ev > 0 ? `+${(ev * 100).toFixed(0)}%` : "—"}
+                        </td>
+                        <td style={{ padding: "8px 6px" }}>
+                          {e.signal ? (
+                            <span style={{ fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 4, background: getSignalColor(e.signal), color: "#fff" }}>{e.signal}</span>
+                          ) : <span style={{ color: "#334155" }}>—</span>}
+                        </td>
+                        <td style={{ padding: "8px 6px", color: bp != null ? "#e2e8f0" : "#334155", fontWeight: 600 }}>
+                          {bp != null ? `${Math.round(bp * 100)}¢` : "—"}
+                        </td>
+                        <td style={{ padding: "8px 6px", color: "#64748b" }}>{(e.volume || 0).toLocaleString()}</td>
+                        <td style={{ padding: "8px 6px", color: "#64748b", fontSize: 11 }}>{timeUntil(e.close_time)}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -737,11 +877,11 @@ function App() {
             {[
               {
                 title: "How It Works",
-                content: "We fetch temperature forecasts from 7 independent weather models (GFS, ECMWF, ICON, GEM, JMA, HRRR, NBM) and build a probability distribution for each city's high and low temperature. We then compare our probabilities against Kalshi market pricing to find contracts where the market is mispriced."
+                content: "We fetch temperature forecasts from 3 high-accuracy models — HRRR (3km, best short-range), NBM (2.5km, NOAA's 31-model blend), and ECMWF (best global model) — and build a probability distribution for each city's high and low temperature. We compare our probabilities against Kalshi market pricing to find mispriced contracts."
               },
               {
                 title: "The Ensemble",
-                content: "Each weather model uses different physics, resolution, and initialization data. When they agree, confidence is high. When they disagree, the spread tells us how uncertain the forecast is. We use the ensemble mean and standard deviation to build a gaussian probability distribution."
+                content: "HRRR is NOAA's 3km rapid-refresh model — king of same-day forecasts with hourly updates. NBM is NOAA's National Blend, which already bias-corrects and optimally weights 31 model systems. ECMWF is the gold-standard global model that adds independent value at 2+ day horizons. Three focused models beat seven noisy ones."
               },
               {
                 title: "Edge Detection",

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Weather Edge — Multi-model ensemble weather prediction pipeline.
-Fetches forecasts from 7 weather models via OpenMeteo, compares against
-Kalshi weather market pricing to find edges.
+Fetches forecasts from 3 weather models (HRRR, NBM, ECMWF) via OpenMeteo,
+compares against Kalshi weather market pricing to find edges.
 """
 
 import json, os, sys, time, math, requests, uuid
@@ -17,13 +17,11 @@ from zoneinfo import ZoneInfo
 OPENMETEO_URL = "https://api.open-meteo.com/v1/forecast"
 
 WEATHER_MODELS = [
-    "gfs_seamless",        # NOAA GFS (global, 6h runs)
-    "ecmwf_ifs025",        # ECMWF IFS (European, gold standard)
-    "icon_seamless",       # DWD ICON (German)
-    "gem_seamless",        # Canadian GEM
-    "jma_seamless",        # Japan Met Agency
-    "ncep_hrrr_conus",     # HRRR (3km, hourly, US only, ~48h range)
-    "ncep_nbm_conus",      # NWS National Blend (~20 model ensemble)
+    "ncep_hrrr_conus",     # HRRR (3km, hourly, CONUS, ~48h) — best short-range
+    "ncep_nbm_conus",      # NBM (2.5km, CONUS) — already blends 31 models w/ bias correction
+    "ecmwf_ifs025",        # ECMWF IFS (14km, global) — best global model, adds value day 2+
+    # Dropped: GFS (redundant, NBM already includes it bias-corrected),
+    #          ICON (Europe-optimized), GEM (Canada-optimized), JMA (55km, noise)
 ]
 
 KALSHI_BASE = "https://api.elections.kalshi.com/trade-api/v2"
