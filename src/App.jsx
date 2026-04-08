@@ -360,47 +360,55 @@ function App() {
               // Kalshi event URL for a section header
               const kalshiEventUrl = (edges) => edges[0] ? kalshiUrl(edges[0]) : "#";
 
-              // Helper: model range bar
-              const ModelRange = ({ models, mean, std, typeColor }) => {
+              // Helper: model range bar — shows each model's temp as a colored number on a horizontal scale
+              const ModelRange = ({ models, mean, std, typeColor, typeLabel }) => {
                 if (!models) return null;
                 const temps = Object.values(models);
-                const pad = 3;
-                const lo = Math.min(...temps) - pad;
-                const hi = Math.max(...temps) + pad;
+                const pad = 2;
+                const lo = Math.floor(Math.min(...temps) - pad);
+                const hi = Math.ceil(Math.max(...temps) + pad);
                 const range = hi - lo;
-                const pos = (t) => Math.max(0, Math.min(100, ((t - lo) / range) * 100));
+                const pos = (t) => Math.max(1, Math.min(99, ((t - lo) / range) * 100));
+                // Sort models by temp for the legend
+                const sorted = Object.entries(models).sort((a, b) => a[1] - b[1]);
                 return (
                   <div style={{ marginBottom: 16 }}>
-                    {/* Ensemble summary line */}
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                      <span style={{ fontSize: 20, fontWeight: 900, color: typeColor }}>{mean}F</span>
-                      <span style={{ fontSize: 10, color: "#64748b" }}>+/- {std}F  ({Math.min(...temps).toFixed(0)}-{Math.max(...temps).toFixed(0)})</span>
+                    {/* Header: "PREDICTED HIGH 76F" style */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+                      <div>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: typeColor, letterSpacing: 1 }}>PREDICTED {typeLabel} </span>
+                        <span style={{ fontSize: 22, fontWeight: 900, color: typeColor }}>{mean}F</span>
+                      </div>
+                      <span style={{ fontSize: 10, color: "#64748b" }}>range {Math.min(...temps).toFixed(0)}-{Math.max(...temps).toFixed(0)}F</span>
                     </div>
-                    {/* Range bar */}
-                    <div style={{ position: "relative", height: 28, background: "#1e293b", borderRadius: 6, overflow: "hidden" }}>
+                    {/* Range bar with model temp numbers */}
+                    <div style={{ position: "relative", height: 36, background: "#1e293b", borderRadius: 6, overflow: "visible", marginBottom: 2 }}>
                       {/* Ensemble ±1 std band */}
-                      <div style={{ position: "absolute", left: `${pos(mean - std)}%`, width: `${pos(mean + std) - pos(mean - std)}%`, height: "100%", background: `${typeColor}15`, borderRadius: 4 }} />
+                      <div style={{ position: "absolute", left: `${pos(mean - std)}%`, width: `${Math.max(pos(mean + std) - pos(mean - std), 1)}%`, height: "100%", background: `${typeColor}18`, borderRadius: 4 }} />
                       {/* Ensemble mean line */}
-                      <div style={{ position: "absolute", left: `${pos(mean)}%`, top: 0, width: 2, height: "100%", background: typeColor, zIndex: 2 }} />
-                      {/* Model dots */}
-                      {Object.entries(models).map(([m, t]) => (
-                        <div key={m} title={`${MODEL_LABELS[m]}: ${t}F`}
-                          style={{ position: "absolute", left: `${pos(t)}%`, top: "50%", transform: "translate(-50%, -50%)",
-                            width: 10, height: 10, borderRadius: "50%", background: MODEL_COLORS[m] || "#94a3b8",
-                            border: "1.5px solid #0f172a", zIndex: 3, cursor: "default" }} />
+                      <div style={{ position: "absolute", left: `${pos(mean)}%`, top: 0, width: 2, height: "100%", background: typeColor, zIndex: 2, borderRadius: 1 }} />
+                      {/* Mean label on top */}
+                      <div style={{ position: "absolute", left: `${pos(mean)}%`, top: -14, transform: "translateX(-50%)", fontSize: 9, fontWeight: 800, color: typeColor, whiteSpace: "nowrap" }}>{mean}F</div>
+                      {/* Model temp numbers positioned on the bar */}
+                      {sorted.map(([m, t], i) => (
+                        <div key={m} style={{ position: "absolute", left: `${pos(t)}%`, top: "50%", transform: "translate(-50%, -50%)", zIndex: 3, display: "flex", flexDirection: "column", alignItems: "center" }}>
+                          <span style={{ fontSize: 11, fontWeight: 800, color: MODEL_COLORS[m] || "#94a3b8", textShadow: "0 0 4px #0f172a, 0 0 4px #0f172a", whiteSpace: "nowrap", lineHeight: 1 }}>
+                            {t.toFixed(0)}
+                          </span>
+                        </div>
                       ))}
                     </div>
-                    {/* Scale + legend */}
-                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
-                      <span style={{ fontSize: 9, color: "#475569" }}>{lo.toFixed(0)}F</span>
-                      <span style={{ fontSize: 9, color: "#475569" }}>{hi.toFixed(0)}F</span>
+                    {/* Scale endpoints */}
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: 9, color: "#475569" }}>{lo}F</span>
+                      <span style={{ fontSize: 9, color: "#475569" }}>{hi}F</span>
                     </div>
-                    {/* Model legend */}
+                    {/* Model legend — compact row */}
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
-                      {Object.entries(models).map(([m, t]) => (
-                        <span key={m} style={{ fontSize: 9, color: "#64748b", display: "flex", alignItems: "center", gap: 3 }}>
-                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: MODEL_COLORS[m] || "#94a3b8", display: "inline-block" }} />
-                          {MODEL_LABELS[m]} {t}F
+                      {sorted.map(([m, t]) => (
+                        <span key={m} style={{ fontSize: 9, display: "flex", alignItems: "center", gap: 3 }}>
+                          <span style={{ fontSize: 10, fontWeight: 800, color: MODEL_COLORS[m] || "#94a3b8" }}>{MODEL_LABELS[m]}</span>
+                          <span style={{ color: "#64748b" }}>{t}F</span>
                         </span>
                       ))}
                     </div>
@@ -463,13 +471,13 @@ function App() {
 
                       {/* HIGH section */}
                       <div style={{ marginBottom: 20 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                          <span style={{ fontSize: 11, fontWeight: 800, color: "#ef4444", letterSpacing: 2 }}>HIGH</span>
-                          {highEventUrl && <a href={highEventUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, fontWeight: 700, color: "#64748b", textDecoration: "none", letterSpacing: 1 }}>KALSHI LIVE &rarr;</a>}
-                        </div>
-                        <ModelRange models={ens.high_models} mean={ens.high_mean} std={ens.high_std} typeColor="#ef4444" />
+                        <ModelRange models={ens.high_models} mean={ens.high_mean} std={ens.high_std} typeColor="#ef4444" typeLabel="HIGH" />
                         {/* Coverage Ladder */}
-                        {highEdges.length > 0 && (
+                        {highEdges.length > 0 && (<>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                            <span style={{ fontSize: 10, fontWeight: 700, color: "#64748b", letterSpacing: 1 }}>COVERAGE LADDER</span>
+                            {highEventUrl && <a href={highEventUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, fontWeight: 700, color: "#f59e0b", textDecoration: "none", letterSpacing: 1 }}>KALSHI LIVE &rarr;</a>}
+                          </div>
                           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                             {highEdges.map((e, i) => {
                               const hasEdge = Math.abs(e.edge) >= (META?.edge_threshold || 0.05);
@@ -492,19 +500,19 @@ function App() {
                               );
                             })}
                           </div>
-                        )}
+                        </>)}
                       </div>
 
                       {/* LOW section */}
                       {ens.low_mean && (
                         <div>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                            <span style={{ fontSize: 11, fontWeight: 800, color: "#3b82f6", letterSpacing: 2 }}>LOW</span>
-                            {lowEventUrl && <a href={lowEventUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, fontWeight: 700, color: "#64748b", textDecoration: "none", letterSpacing: 1 }}>KALSHI LIVE &rarr;</a>}
-                          </div>
-                          <ModelRange models={ens.low_models} mean={ens.low_mean} std={ens.low_std} typeColor="#3b82f6" />
+                          <ModelRange models={ens.low_models} mean={ens.low_mean} std={ens.low_std} typeColor="#3b82f6" typeLabel="LOW" />
                           {/* Coverage Ladder */}
-                          {lowEdges.length > 0 && (
+                          {lowEdges.length > 0 && (<>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                              <span style={{ fontSize: 10, fontWeight: 700, color: "#64748b", letterSpacing: 1 }}>COVERAGE LADDER</span>
+                              {lowEventUrl && <a href={lowEventUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, fontWeight: 700, color: "#f59e0b", textDecoration: "none", letterSpacing: 1 }}>KALSHI LIVE &rarr;</a>}
+                            </div>
                             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                               {lowEdges.map((e, i) => {
                                 const hasEdge = Math.abs(e.edge) >= (META?.edge_threshold || 0.05);
@@ -527,7 +535,7 @@ function App() {
                                 );
                               })}
                             </div>
-                          )}
+                          </>)}
                         </div>
                       )}
                     </div>
