@@ -8,6 +8,9 @@ concurrency:
   group: weather-refresh
   cancel-in-progress: true
 
+permissions:
+  contents: write
+
 jobs:
   refresh:
     runs-on: ubuntu-latest
