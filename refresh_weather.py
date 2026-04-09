@@ -41,16 +41,47 @@ CITIES = {
     "PHX":   {"name": "Phoenix",       "lat": 33.4373, "lon": -112.008, "high": "KXHIGHTPHX",  "low": "KXLOWTPHX",   "tz": "America/Phoenix"},
 }
 
-# Minimum sigma floor — even when all models agree, forecast error is never zero
-# Based on typical NWS forecast error: ~3.5F for day 1-2, higher for day 3+
-SIGMA_FLOOR = 3.5  # degrees F
+# Sigma: city-specific from calibration data, with global fallback
+# calibrate.py generates data/city_sigma.json with per-city/type/month sigma + bias
+SIGMA_FLOOR = 3.0  # Global fallback when no calibration data (conservative default)
+SIGMA_INFLATION = 1.3  # Inflate calibrated sigma to account for operational vs ideal conditions
+SIGMA_MIN = 1.5  # Absolute minimum sigma (even PHX can surprise)
+
+def _load_calibration():
+    """Load city-specific sigma + bias from calibration data."""
+    cal_file = Path(__file__).parent / "data" / "city_sigma.json"
+    if cal_file.exists():
+        return json.loads(cal_file.read_text(encoding="utf-8"))
+    return None
+
+CITY_SIGMA = _load_calibration()
 
 # Edge threshold for signals
-EDGE_THRESHOLD = 0.05  # 5% edge minimum
+EDGE_THRESHOLD = 0.12  # 12% edge minimum — raised from 5% (too loose, was finding noise)
+MAX_DISAGREEMENT = 0.20  # Kill switch: if |model - market| > 20%, it's a model failure, not alpha
 
 # ============================================================
 #  HELPERS
 # ============================================================
+
+def get_calibration(city_code, mtype, date_str):
+    """Look up city/type/month-specific sigma and bias from calibration data.
+    Returns (sigma, bias). Falls back to SIGMA_FLOOR if no data."""
+    if CITY_SIGMA is None:
+        return SIGMA_FLOOR, 0.0
+    city_cal = CITY_SIGMA.get(city_code, {}).get(mtype, {})
+    try:
+        month = str(int(date_str.split("-")[1]))
+    except (IndexError, ValueError):
+        return SIGMA_FLOOR, 0.0
+    month_cal = city_cal.get(month, {})
+    if not month_cal:
+        return SIGMA_FLOOR, 0.0
+    raw_sigma = month_cal.get("sigma", SIGMA_FLOOR)
+    bias = month_cal.get("bias", 0.0)
+    sigma = max(raw_sigma * SIGMA_INFLATION, SIGMA_MIN)
+    return sigma, bias
+
 
 def norm_cdf(x):
     """Standard normal CDF approximation."""
@@ -472,9 +503,13 @@ def calculate_edges(ensembles, markets, pace_data=None):
             else:
                 mean = ensemble["high_mean"] if mtype == "high" else ensemble.get("low_mean")
 
-            std = raw_std
-            if mean is None or std is None:
+            if mean is None or raw_std is None:
                 continue
+
+            # Apply calibration: city-specific sigma + bias correction
+            cal_sigma, cal_bias = get_calibration(city_code, mtype, date_str)
+            mean = mean - cal_bias  # Correct systematic forecast bias
+            std = cal_sigma  # Use calibrated sigma instead of raw model spread
 
             for contract in market_data["contracts"]:
                 mid = contract.get("mid")
@@ -487,7 +522,7 @@ def calculate_edges(ensembles, markets, pace_data=None):
                 spread = yes_ask - yes_bid
                 if spread >= 0.50:  # No real market
                     continue
-                if mid <= 0.05 or mid >= 0.93:  # Near-settled — market has intraday info our model lacks
+                if mid <= 0.08 or mid >= 0.92:  # Near-settled — market has intraday info our model lacks
                     continue
 
                 # Skip expired contracts
@@ -533,7 +568,11 @@ def calculate_edges(ensembles, markets, pace_data=None):
                 # can't price them (max ~20% for any bucket, even when models cluster there).
                 # Still calculate edge for display, but don't generate actionable signals.
                 if strike_type != "between" and abs(edge) >= EDGE_THRESHOLD:
-                    signal = "YES" if edge > 0 else "NO"
+                    # Kill switch: huge disagreements with market are model failures
+                    if abs(edge) > MAX_DISAGREEMENT:
+                        signal = None
+                    else:
+                        signal = "YES" if edge > 0 else "NO"
                 else:
                     signal = None
 
@@ -573,7 +612,8 @@ def calculate_edges(ensembles, markets, pace_data=None):
     # Summary
     signals = [e for e in edges if e["signal"]]
     print(f"  Total contracts analyzed: {len(edges)}")
-    print(f"  Signals (>= {EDGE_THRESHOLD*100}% edge): {len(signals)}")
+    killed = len([e for e in edges if e["strike_type"] != "between" and abs(e["edge"]) >= EDGE_THRESHOLD and abs(e["edge"]) > MAX_DISAGREEMENT])
+    print(f"  Signals ({EDGE_THRESHOLD*100:.0f}-{MAX_DISAGREEMENT*100:.0f}% edge): {len(signals)}  (killed {killed} over {MAX_DISAGREEMENT*100:.0f}% disagreement)")
     if signals:
         top = signals[0]
         print(f"  Best edge: {top['city_name']} {top['type']} {top['threshold']}F "
@@ -1016,6 +1056,7 @@ def resolve_signals():
                     "market_mid": sig["market_mid"],
                     "ensemble_mean": sig.get("ensemble_mean"),
                     "ensemble_std": sig.get("ensemble_std"),
+                    "model_count": sig.get("model_count"),
                     "actual_temp": actual,
                     "contract_resolved_yes": contract_yes,
                     "result": "WIN" if win else "LOSS",
@@ -1134,11 +1175,22 @@ def backtest_report():
         print(f"\n  {total_signals} signals recorded, 0 resolved. Markets still open.")
         return
 
+    # ---- Era split ----
+    current_mc = len(WEATHER_MODELS)
+    current_era = [r for r in resolutions if r.get("model_count") == current_mc]
+    legacy_era = [r for r in resolutions if r.get("model_count", current_mc) != current_mc]
+
     # ---- Overall stats ----
     wins = [r for r in resolutions if r["result"] == "WIN"]
     losses = [r for r in resolutions if r["result"] == "LOSS"]
     total_pnl = sum(r["pnl"] for r in resolutions)
     avg_pnl = total_pnl / len(resolutions)
+
+    # Era sub-stats
+    cur_wins = sum(1 for r in current_era if r["result"] == "WIN")
+    cur_pnl = sum(r["pnl"] for r in current_era)
+    leg_wins = sum(1 for r in legacy_era if r["result"] == "WIN")
+    leg_pnl = sum(r["pnl"] for r in legacy_era)
 
     print(f"""
 {'=' * 65}
@@ -1152,6 +1204,10 @@ def backtest_report():
   Win Rate:          {len(wins)}/{len(resolutions)} = {len(wins)/len(resolutions):.1%}
   Avg P&L/signal:    ${avg_pnl:+.4f}  (on $1 bets)
   Total P&L:         ${total_pnl:+.2f}
+
+  --- ERA BREAKDOWN ---
+  Current ({current_mc}-model): {len(current_era):3d} resolved, {cur_wins}/{len(current_era)} win ({cur_wins/len(current_era):.0%} WR), ${cur_pnl:+.2f} P&L""" + (f"""
+  Legacy  (old):     {len(legacy_era):3d} resolved, {leg_wins}/{len(legacy_era)} win ({leg_wins/len(legacy_era):.0%} WR), ${leg_pnl:+.2f} P&L""" if legacy_era else "") + """
 """)
 
     # ---- By edge bucket ----
@@ -1301,6 +1357,7 @@ def write_data_files(forecasts, ensembles, markets, edges, observations, pace_da
         "total_contracts": len(flat_markets),
         "total_edges": len([e for e in edges if e["signal"]]),
         "edge_threshold": EDGE_THRESHOLD,
+        "max_disagreement": MAX_DISAGREEMENT,
     }
     _write_js(src_dir / "meta.js", "META", meta)
     print(f"  Wrote meta to src/meta.js")
@@ -1314,6 +1371,10 @@ def write_data_files(forecasts, ensembles, markets, edges, observations, pace_da
                 resolutions.append(json.loads(line))
             except json.JSONDecodeError:
                 continue
+
+    # Only show current-era results (3-model ensemble) in frontend
+    current_model_count = len(WEATHER_MODELS)
+    resolutions = [r for r in resolutions if r.get("model_count") == current_model_count]
 
     # Sort newest first
     resolutions.sort(key=lambda r: r.get("resolved_at", ""), reverse=True)

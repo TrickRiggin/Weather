@@ -9,6 +9,7 @@ Weather market prediction platform. React 19 + Vite frontend, Python data pipeli
 ## Key Files
 - `src/App.jsx` — React frontend (Scanner, Cities, Guide tabs)
 - `refresh_weather.py` — Python pipeline (OpenMeteo, Kalshi, NWS, pace tracking, historical tracking)
+- `calibrate.py` — Historical verification: fetches 2yr actuals + 1yr model forecasts, computes city/type/month sigma + bias
 - Auto-generated JS: `markets.js`, `forecasts.js`, `edges.js`, `observations.js`, `ai_analysis.js`, `meta.js`, `results.js`
 - `data/signals.jsonl` — Historical edge signal snapshots (append-only)
 - `data/resolutions.jsonl` — Resolved signals with actual temps, WIN/LOSS, P&L
@@ -46,11 +47,14 @@ mean = weighted_avg(HRRR*1, NBM*1.2, ECMWF*0.8)  # day 1 weights
 # Day 2+:
 mean = weighted_avg(NBM*1.2, ECMWF*1.0)  # HRRR nulls out
 
-std = max(model_std, SIGMA_FLOOR)  # SIGMA_FLOOR = 3.5F
+sigma, bias = get_calibration(city, type, date)  # city/type/month-specific from calibrate.py
+mean = ensemble_mean - bias  # correct systematic forecast bias
+std = max(sigma * 1.3, 1.5)  # inflate for operational conditions, floor at 1.5F
 P(above T) = 1 - normCDF((T - mean) / std)
 edge = our_probability - kalshi_midpoint
-signal = YES/NO when |edge| >= 5%
+signal = YES/NO when 12% <= |edge| <= 20%  (kill switch: >20% disagreement = model failure)
 EV capped at 300% (if higher, model is probably wrong, not market)
+Near-settled filter: skip contracts with mid <= 8% or mid >= 92%
 ```
 
 ### Pace Tracking (Intraday)
@@ -79,10 +83,15 @@ EV capped at 300% (if higher, model is probably wrong, not market)
 - Settled/dead contracts (bid=0, ask=0.01) must be filtered or they create phantom edges
 - HRRR hourly times are in city LOCAL timezone (OpenMeteo `timezone=auto`), NWS observations are UTC — must convert
 - Kalshi "between" contracts are narrow 2-degree buckets — with sigma=3.5F, any single bucket gets ~10-15% max probability
-- SIGMA_FLOOR=3.5F is a global floor; tropical cities (MIA) have lower forecast error for lows than continental cities (DEN)
+- Sigma is now city/type/month-specific from `calibrate.py` (data/city_sigma.json), NOT a global floor
+- Calibration uses 1yr of OpenMeteo Previous Runs API forecasts vs Archive API actuals (7320 samples)
+- Sigma ranges: PHX/MIA/LAX high ~2.0F (inflated), CHI/NYC/DAL high ~3.0-3.5F (inflated)
+- Bias correction applied: CHI April highs have -1.6F bias (model runs cold), NYC April lows +1.6F (model runs warm)
+- SIGMA_FLOOR=3.0F is now just a fallback when no calibration data exists
 - NBM is already a 31-model blend — including raw GFS/ICON/GEM/JMA alongside it dilutes signal (we dropped them)
 - OpenMeteo model name gotcha: `ncep_hrrr_conus` not `hrrr_conus`, `ncep_nbm_conus` not `nbm_conus`
 - With 3 models, HRRR nulls past 48h → day 2+ has only NBM + ECMWF (2 models, SIGMA_FLOOR dominates std)
+- Resolutions track `model_count` — results.js frontend only shows current-era (3-model) results; backtest_report shows era breakdown
 - Kalshi rate limits: 0.5s delay between series fetches to avoid 429s
 
 ## Secrets (GitHub + .env)
