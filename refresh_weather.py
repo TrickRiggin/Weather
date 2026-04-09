@@ -47,6 +47,13 @@ SIGMA_FLOOR = 3.0  # Global fallback when no calibration data (conservative defa
 SIGMA_INFLATION = 1.3  # Inflate calibrated sigma to account for operational vs ideal conditions
 SIGMA_MIN = 1.5  # Absolute minimum sigma (even PHX can surprise)
 
+# Model weights by forecast horizon. Bucket 2 also serves as the 2+ fallback.
+HORIZON_WEIGHTS = {
+    0: {"ncep_hrrr_conus": 2.0, "ncep_nbm_conus": 1.0, "ecmwf_ifs025": 0.5},
+    1: {"ncep_hrrr_conus": 1.0, "ncep_nbm_conus": 1.2, "ecmwf_ifs025": 0.8},
+    2: {"ncep_nbm_conus": 1.2, "ecmwf_ifs025": 1.0},
+}
+
 def _load_calibration():
     """Load city-specific sigma + bias from calibration data."""
     cal_file = Path(__file__).parent / "data" / "city_sigma.json"
@@ -64,7 +71,35 @@ MAX_DISAGREEMENT = 0.20  # Kill switch: if |model - market| > 20%, it's a model 
 #  HELPERS
 # ============================================================
 
-def get_calibration(city_code, mtype, date_str):
+def horizon_bucket(horizon):
+    """Collapse raw day offsets into the buckets used by the live model."""
+    try:
+        return min(max(int(horizon), 0), 2)
+    except (TypeError, ValueError):
+        return 1
+
+
+def get_horizon_weights(horizon):
+    """Return ensemble weights for the requested forecast horizon bucket."""
+    return HORIZON_WEIGHTS.get(horizon_bucket(horizon), HORIZON_WEIGHTS[2])
+
+
+def horizon_weighted_mean(model_temps, horizon):
+    """Compute a horizon-weighted mean from {model_key: temperature}."""
+    weights = get_horizon_weights(horizon)
+    total_w, total_v = 0.0, 0.0
+    for model, temp in model_temps.items():
+        if temp is None:
+            continue
+        w = weights.get(model, 0.5)
+        if w <= 0:
+            continue
+        total_v += temp * w
+        total_w += w
+    return round(total_v / total_w, 1) if total_w > 0 else None
+
+
+def get_calibration(city_code, mtype, date_str, horizon=1):
     """Look up city/type/month-specific sigma and bias from calibration data.
     Returns (sigma, bias). Falls back to SIGMA_FLOOR if no data."""
     if CITY_SIGMA is None:
@@ -74,7 +109,16 @@ def get_calibration(city_code, mtype, date_str):
         month = str(int(date_str.split("-")[1]))
     except (IndexError, ValueError):
         return SIGMA_FLOOR, 0.0
-    month_cal = city_cal.get(month, {})
+    # Backward compatibility: older calibration files were keyed directly by month.
+    if month in city_cal:
+        month_cal = city_cal.get(month, {})
+    else:
+        hkey = str(horizon_bucket(horizon))
+        month_cal = (
+            city_cal.get(hkey, {}).get(month)
+            or city_cal.get("default", {}).get(month)
+            or {}
+        )
     if not month_cal:
         return SIGMA_FLOOR, 0.0
     raw_sigma = month_cal.get("sigma", SIGMA_FLOOR)
@@ -444,29 +488,6 @@ def calculate_edges(ensembles, markets, pace_data=None):
         local_now = now_utc.astimezone(ZoneInfo(city["tz"]))
         city_today[city_code] = local_now.strftime("%Y-%m-%d")
 
-    # Model weights by days-ahead horizon
-    # Day 0: HRRR is king (3km, hourly updates, pace-corrected)
-    # Day 1: balanced, NBM slight lead (it already blends intelligently)
-    # Day 2+: HRRR nulls out, NBM and ECMWF carry
-    HORIZON_WEIGHTS = {
-        0: {"ncep_hrrr_conus": 2.0, "ncep_nbm_conus": 1.0, "ecmwf_ifs025": 0.5},
-        1: {"ncep_hrrr_conus": 1.0, "ncep_nbm_conus": 1.2, "ecmwf_ifs025": 0.8},
-    }
-    DEFAULT_WEIGHTS = {"ncep_nbm_conus": 1.2, "ecmwf_ifs025": 1.0}
-
-    def horizon_weighted_mean(model_temps, horizon):
-        """Compute horizon-weighted mean from {model_key: temp} dict."""
-        weights = HORIZON_WEIGHTS.get(min(horizon, 1), DEFAULT_WEIGHTS)
-        total_w, total_v = 0, 0
-        for model, temp in model_temps.items():
-            if temp is None:
-                continue
-            w = weights.get(model, 0.5)
-            if w > 0:
-                total_v += temp * w
-                total_w += w
-        return round(total_v / total_w, 1) if total_w > 0 else None
-
     edges = []
     for city_code, city_markets in markets.items():
         city_ensemble = ensembles.get(city_code, {})
@@ -488,6 +509,7 @@ def calculate_edges(ensembles, markets, pace_data=None):
             except Exception:
                 horizon = 1
             horizon = max(0, horizon)
+            horizon_key = horizon_bucket(horizon)
 
             # Get per-model temps and raw ensemble stats
             model_temps = ensemble.get(f"{mtype}_models", {})
@@ -507,7 +529,7 @@ def calculate_edges(ensembles, markets, pace_data=None):
                 continue
 
             # Apply calibration: city-specific sigma + bias correction
-            cal_sigma, cal_bias = get_calibration(city_code, mtype, date_str)
+            cal_sigma, cal_bias = get_calibration(city_code, mtype, date_str, horizon=horizon_key)
             mean = mean - cal_bias  # Correct systematic forecast bias
             std = cal_sigma  # Use calibrated sigma instead of raw model spread
 
@@ -590,6 +612,8 @@ def calculate_edges(ensembles, markets, pace_data=None):
                     "city_name": CITIES[city_code]["name"],
                     "date": date_str,
                     "type": mtype,
+                    "horizon": horizon,
+                    "horizon_bucket": horizon_key,
                     "ticker": contract["ticker"],
                     "strike_type": strike_type,
                     "floor": floor,
@@ -599,11 +623,15 @@ def calculate_edges(ensembles, markets, pace_data=None):
                     "market_mid": mid,
                     "yes_bid": contract["yes_bid"],
                     "yes_ask": contract["yes_ask"],
+                    "spread": round(spread, 4),
                     "edge": edge,
                     "ev": round(ev, 4),
                     "signal": signal,
                     "volume": contract["volume"],
                     "close_time": contract["close_time"],
+                    "calibration_sigma": round(std, 4),
+                    "calibration_bias": round(cal_bias, 4),
+                    "pace_used": horizon == 0 and mtype == "high" and pace.get("adjusted_high") is not None,
                 })
 
     # Sort by absolute edge descending
@@ -880,6 +908,82 @@ Respond in JSON format:
 DATA_DIR = Path(__file__).parent / "data"
 
 
+def record_contract_snapshots(edges, ensembles, pace_data):
+    """
+    Append every evaluated contract to data/contract_snapshots.jsonl.
+    Deduplicates by ticker within the last hour to keep the file informative
+    without exploding on every refresh.
+    """
+    print("\n=== RECORDING CONTRACT SNAPSHOTS ===\n")
+
+    DATA_DIR.mkdir(exist_ok=True)
+    snapshots_file = DATA_DIR / "contract_snapshots.jsonl"
+
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    if not edges:
+        print("  No contracts to record")
+        return
+
+    recent_tickers = set()
+    if snapshots_file.exists():
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=1)
+        for line in snapshots_file.read_text(encoding="utf-8").splitlines():
+            try:
+                rec = json.loads(line)
+                rec_ts = datetime.fromisoformat(rec["snapshot_ts"].replace("Z", "+00:00"))
+                if rec_ts > cutoff:
+                    recent_tickers.add(rec["ticker"])
+            except (json.JSONDecodeError, KeyError, ValueError):
+                continue
+
+    new_count = 0
+    with open(snapshots_file, "a", encoding="utf-8") as f:
+        for e in edges:
+            if e["ticker"] in recent_tickers:
+                continue
+
+            ens = ensembles.get(e["city"], {}).get(e["date"], {})
+            pace = pace_data.get(e["city"], {})
+
+            record = {
+                "id": str(uuid.uuid4()),
+                "snapshot_ts": timestamp,
+                "city": e["city"],
+                "date": e["date"],
+                "type": e["type"],
+                "horizon": e.get("horizon"),
+                "horizon_bucket": e.get("horizon_bucket"),
+                "ticker": e["ticker"],
+                "strike_type": e["strike_type"],
+                "floor": e["floor"],
+                "cap": e["cap"],
+                "threshold": e["threshold"],
+                "our_prob": e["our_prob"],
+                "market_mid": e["market_mid"],
+                "edge": e["edge"],
+                "signal": e["signal"],
+                "ev": e["ev"],
+                "yes_bid": e["yes_bid"],
+                "yes_ask": e["yes_ask"],
+                "spread": e.get("spread"),
+                "volume": e["volume"],
+                "close_time": e["close_time"],
+                "ensemble_mean": ens.get(f"{e['type']}_mean"),
+                "ensemble_std": ens.get(f"{e['type']}_std"),
+                "model_count": ens.get("model_count"),
+                "pace_delta": pace.get("pace_delta"),
+                "pace_used": e.get("pace_used"),
+                "calibration_sigma": e.get("calibration_sigma"),
+                "calibration_bias": e.get("calibration_bias"),
+            }
+
+            f.write(json.dumps(record, default=str) + "\n")
+            new_count += 1
+            recent_tickers.add(e["ticker"])
+
+    print(f"  Recorded {new_count} new contract snapshots ({len(edges) - new_count} deduped within 1h)")
+
+
 def record_signals(edges, ensembles, pace_data):
     """
     Append edge signals to data/signals.jsonl for backtesting.
@@ -926,6 +1030,8 @@ def record_signals(edges, ensembles, pace_data):
                 "city": e["city"],
                 "date": e["date"],
                 "type": e["type"],
+                "horizon": e.get("horizon"),
+                "horizon_bucket": e.get("horizon_bucket"),
                 "ticker": e["ticker"],
                 "strike_type": e["strike_type"],
                 "floor": e["floor"],
@@ -938,12 +1044,16 @@ def record_signals(edges, ensembles, pace_data):
                 "ev": e["ev"],
                 "yes_bid": e["yes_bid"],
                 "yes_ask": e["yes_ask"],
+                "spread": e.get("spread"),
                 "volume": e["volume"],
                 "close_time": e["close_time"],
                 "ensemble_mean": ens.get(f"{e['type']}_mean"),
                 "ensemble_std": ens.get(f"{e['type']}_std"),
                 "model_count": ens.get("model_count"),
                 "pace_delta": pace.get("pace_delta"),
+                "pace_used": e.get("pace_used"),
+                "calibration_sigma": e.get("calibration_sigma"),
+                "calibration_bias": e.get("calibration_bias"),
             }
 
             f.write(json.dumps(record, default=str) + "\n")
@@ -952,6 +1062,114 @@ def record_signals(edges, ensembles, pace_data):
 
     total = len(signals)
     print(f"  Recorded {new_count} new signals ({total - new_count} deduped within 1h)")
+
+
+def resolve_contract_snapshots():
+    """
+    Resolve every recorded contract snapshot after market close.
+    This is the main learning dataset for calibration and pricing analysis.
+    """
+    print("\n=== RESOLVING CONTRACT SNAPSHOTS ===\n")
+
+    snapshots_file = DATA_DIR / "contract_snapshots.jsonl"
+    resolutions_file = DATA_DIR / "contract_resolutions.jsonl"
+
+    if not snapshots_file.exists():
+        print("  No contract snapshots file yet")
+        return
+
+    now = datetime.now(timezone.utc)
+
+    resolved_ids = set()
+    if resolutions_file.exists():
+        for line in resolutions_file.read_text(encoding="utf-8").splitlines():
+            try:
+                rec = json.loads(line)
+                resolved_ids.add(rec["snapshot_id"])
+            except (json.JSONDecodeError, KeyError):
+                continue
+
+    to_resolve = {}
+    for line in snapshots_file.read_text(encoding="utf-8").splitlines():
+        try:
+            rec = json.loads(line)
+            if rec["id"] in resolved_ids:
+                continue
+            close_time = datetime.fromisoformat(rec["close_time"].replace("Z", "+00:00"))
+            if now <= close_time + timedelta(hours=2):
+                continue
+            key = (rec["city"], rec["date"], rec["type"])
+            to_resolve.setdefault(key, []).append(rec)
+        except (json.JSONDecodeError, KeyError, ValueError):
+            continue
+
+    if not to_resolve:
+        print("  No contract snapshots ready for resolution")
+        return
+
+    pending = sum(len(v) for v in to_resolve.values())
+    print(f"  {pending} contract snapshots across {len(to_resolve)} markets to resolve")
+
+    actual_temps = fetch_actual_temps(to_resolve)
+
+    new_resolutions = 0
+    with open(resolutions_file, "a", encoding="utf-8") as f:
+        for key, snaps in to_resolve.items():
+            city, date_str, mtype = key
+            actual = actual_temps.get(key)
+            if actual is None:
+                continue
+
+            for snap in snaps:
+                strike_type = snap["strike_type"]
+                floor = snap.get("floor")
+                cap = snap.get("cap")
+
+                if strike_type == "less" and cap is not None:
+                    contract_yes = actual < cap
+                elif strike_type == "greater" and floor is not None:
+                    contract_yes = actual > floor
+                elif strike_type == "between" and floor is not None and cap is not None:
+                    contract_yes = floor <= actual < cap
+                else:
+                    continue
+
+                resolution = {
+                    "snapshot_id": snap["id"],
+                    "snapshot_ts": snap.get("snapshot_ts"),
+                    "ticker": snap["ticker"],
+                    "city": city,
+                    "date": date_str,
+                    "type": mtype,
+                    "horizon": snap.get("horizon"),
+                    "horizon_bucket": snap.get("horizon_bucket"),
+                    "threshold": snap["threshold"],
+                    "strike_type": strike_type,
+                    "signal": snap.get("signal"),
+                    "edge": snap["edge"],
+                    "our_prob": snap["our_prob"],
+                    "market_mid": snap["market_mid"],
+                    "yes_bid": snap.get("yes_bid"),
+                    "yes_ask": snap.get("yes_ask"),
+                    "spread": snap.get("spread"),
+                    "ensemble_mean": snap.get("ensemble_mean"),
+                    "ensemble_std": snap.get("ensemble_std"),
+                    "model_count": snap.get("model_count"),
+                    "pace_delta": snap.get("pace_delta"),
+                    "pace_used": snap.get("pace_used"),
+                    "calibration_sigma": snap.get("calibration_sigma"),
+                    "calibration_bias": snap.get("calibration_bias"),
+                    "actual_temp": actual,
+                    "contract_resolved_yes": contract_yes,
+                    "brier": round((snap["our_prob"] - float(contract_yes)) ** 2, 6),
+                    "resolved_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                }
+
+                f.write(json.dumps(resolution, default=str) + "\n")
+                new_resolutions += 1
+                resolved_ids.add(snap["id"])
+
+    print(f"  Resolved {new_resolutions} contract snapshots")
 
 
 def resolve_signals():
@@ -1049,14 +1267,21 @@ def resolve_signals():
                     "city": city,
                     "date": date_str,
                     "type": mtype,
+                    "horizon": sig.get("horizon"),
+                    "horizon_bucket": sig.get("horizon_bucket"),
                     "threshold": sig["threshold"],
                     "signal": sig["signal"],
                     "edge": sig["edge"],
                     "our_prob": sig["our_prob"],
                     "market_mid": sig["market_mid"],
+                    "spread": sig.get("spread"),
                     "ensemble_mean": sig.get("ensemble_mean"),
                     "ensemble_std": sig.get("ensemble_std"),
                     "model_count": sig.get("model_count"),
+                    "pace_delta": sig.get("pace_delta"),
+                    "pace_used": sig.get("pace_used"),
+                    "calibration_sigma": sig.get("calibration_sigma"),
+                    "calibration_bias": sig.get("calibration_bias"),
                     "actual_temp": actual,
                     "contract_resolved_yes": contract_yes,
                     "result": "WIN" if win else "LOSS",
@@ -1500,8 +1725,10 @@ def main():
     # 5. Calculate edges (pace-aware — uses HRRR pace adjustment for day 0 highs)
     edges = calculate_edges(ensembles, markets, pace_data=pace_data)
 
-    # 6. Record signals + resolve past ones (always, not just write mode)
+    # 6. Record every priced contract + actionable signals and resolve past ones
+    record_contract_snapshots(edges, ensembles, pace_data)
     record_signals(edges, ensembles, pace_data)
+    resolve_contract_snapshots()
     resolve_signals()
 
     # 7. Write data files
