@@ -1,9 +1,9 @@
 import { useState, useMemo } from "react";
+import "./App.css";
 import { EDGES } from "./edges.js";
 import { FORECASTS } from "./forecasts.js";
 import { MARKETS } from "./markets.js";
 import { OBSERVATIONS } from "./observations.js";
-// AI analysis removed — singular model temps don't benefit from LLM interpretation
 import { META } from "./meta.js";
 import { RESULTS } from "./results.js";
 
@@ -25,7 +25,6 @@ const MODEL_COLORS = {
 // ========== HELPERS ==========
 const pct = (v, digits = 0) => v != null ? `${(v * 100).toFixed(digits)}%` : "—";
 const signPct = (v) => v != null ? `${v > 0 ? "+" : ""}${(v * 100).toFixed(1)}%` : "—";
-const tempF = (v) => v != null ? `${v.toFixed(1)}F` : "—";
 
 const getSignalColor = (signal) => signal === "YES" ? "#22c55e" : signal === "NO" ? "#ef4444" : "#64748b";
 const getEdgeColor = (edge) => {
@@ -33,14 +32,6 @@ const getEdgeColor = (edge) => {
   if (abs >= 0.15) return "#22c55e";
   if (abs >= 0.08) return "#f59e0b";
   return "#64748b";
-};
-
-const getConfidenceBadge = (edge) => {
-  const abs = Math.abs(edge || 0);
-  if (abs >= 0.20) return { label: "STRONG", bg: "#22c55e" };
-  if (abs >= 0.10) return { label: "SOLID", bg: "#f59e0b" };
-  if (abs >= 0.05) return { label: "LEAN", bg: "#3b82f6" };
-  return null;
 };
 
 const timeUntil = (closeTime) => {
@@ -73,6 +64,14 @@ const getForecastData = (e) => {
   return e.type === "high"
     ? { mean: cityFcst.high_mean, std: cityFcst.high_std, models: cityFcst.high_models, modelCount: cityFcst.model_count }
     : { mean: cityFcst.low_mean, std: cityFcst.low_std, models: cityFcst.low_models, modelCount: cityFcst.model_count };
+};
+
+const formatBoardDate = (dateStr) => {
+  if (!dateStr) return "Live";
+  return new Date(`${dateStr}T00:00:00`).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
 };
 
 
@@ -126,109 +125,103 @@ function App() {
   }, [activeDate, filterCity, filterType, sortBy]);
 
   const cityList = Object.keys(CITY_NAMES);
-
-  // ========== TAB STYLE ==========
-  const ts = (t) => ({
-    padding: "8px 16px", cursor: "pointer", borderRadius: 20, fontSize: 12,
-    fontWeight: 700, letterSpacing: 1, textTransform: "uppercase",
-    background: tab === t ? "rgba(245,158,11,0.15)" : "transparent",
-    color: tab === t ? "#f59e0b" : "#64748b",
-    border: tab === t ? "1px solid rgba(245,158,11,0.3)" : "1px solid transparent",
-    transition: "all 0.2s", display: "inline-flex", alignItems: "center", gap: 6,
-  });
+  const activeDateLabel = activeDate ? formatBoardDate(activeDate) : "All dates";
+  const updatedAtLabel = META?.last_updated
+    ? new Date(META.last_updated).toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    })
+    : "Awaiting refresh";
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0a0f1a", fontFamily: "'Inter', system-ui, sans-serif", color: "#e2e8f0" }}>
-      <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-      <div style={{ maxWidth: 960, margin: "0 auto", padding: "24px 16px" }}>
-
-        {/* HEADER */}
-        <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <h1 style={{ fontFamily: "Outfit", fontSize: "clamp(24px, 6vw, 40px)", fontWeight: 900, background: "linear-gradient(135deg, #3b82f6, #06b6d4)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", margin: 0, letterSpacing: -1 }}>
-            AA's WEATHER EDGE
-          </h1>
-          <p style={{ color: "#64748b", fontSize: 11, margin: "4px 0 0", letterSpacing: 2, textTransform: "uppercase" }}>
-            HRRR + NBM + ECMWF vs Kalshi Markets
+    <div className="weather-app">
+      <div className="app-shell">
+        <section className="hero-panel">
+          <div className="hero-kicker">AA Weather Edge</div>
+          <h1 className="hero-title">Faster reads on weather markets.</h1>
+          <p className="hero-copy">
+            Pace-aware temperature probabilities for the highest-volume Kalshi cities, tuned by city,
+            month, and forecast horizon without wasting the top of the page on vanity stats.
           </p>
-
-          {/* Stats bar */}
-          <div style={{ display: "flex", justifyContent: "center", gap: 20, marginTop: 12, flexWrap: "wrap" }}>
-            {[
-              { label: "Models", value: META?.models || 7 },
-              { label: "Cities", value: META?.cities || 10 },
-              { label: "Contracts", value: META?.total_contracts || 0 },
-              { label: "Signals", value: signals.length, color: signals.length > 0 ? "#22c55e" : "#64748b" },
-            ].map(s => (
-              <div key={s.label} style={{ fontSize: 11, color: "#64748b" }}>
-                <span style={{ fontSize: 16, fontWeight: 800, color: s.color || "#e2e8f0", marginRight: 4 }}>{s.value}</span>
-                {s.label}
-              </div>
-            ))}
+          <div className="hero-status-row">
+            <span className="status-pill is-warm"><strong>{signals.length}</strong> live signals</span>
+            <span className="status-pill"><strong>{META?.total_contracts || MARKETS.length}</strong> contracts indexed</span>
+            <span className="status-pill"><strong>{activeDateLabel}</strong> board focus</span>
+            <span className="status-pill"><strong>{updatedAtLabel}</strong> last refresh</span>
           </div>
-
-          {/* Updated timestamp */}
-          {META?.last_updated && (
-            <p style={{ fontSize: 10, color: "#334155", marginTop: 8 }}>
-              Last updated: {new Date(META.last_updated).toLocaleString()}
-            </p>
-          )}
-        </div>
+        </section>
 
         {/* TAB BAR */}
-        <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
-          <div style={ts("scanner")} onClick={() => setTab("scanner")}>
+        <div className="nav-chrome">
+          <button type="button" className={`tab-pill${tab === "scanner" ? " is-active" : ""}`} onClick={() => setTab("scanner")}>
             Scanner
-            {signals.length > 0 && <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 6px", borderRadius: 10, background: tab === "scanner" ? "#f59e0b" : "#22c55e", color: "#000" }}>{signals.length}</span>}
-          </div>
-          <div style={ts("cities")} onClick={() => setTab("cities")}>Cities</div>
-          <div style={ts("results")} onClick={() => setTab("results")}>
+            {signals.length > 0 && <span className="tab-pill-count">{signals.length}</span>}
+          </button>
+          <button type="button" className={`tab-pill${tab === "cities" ? " is-active" : ""}`} onClick={() => setTab("cities")}>Cities</button>
+          <button type="button" className={`tab-pill${tab === "results" ? " is-active" : ""}`} onClick={() => setTab("results")}>
             Results
-            {(RESULTS?.summary?.total || 0) > 0 && <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 6px", borderRadius: 10, background: tab === "results" ? "#f59e0b" : ((RESULTS?.summary?.win_rate || 0) >= 0.55 ? "#22c55e" : "#64748b"), color: tab === "results" ? "#000" : "#fff", marginLeft: 4 }}>{RESULTS.summary.total}</span>}
-          </div>
-          <div style={ts("guide")} onClick={() => setTab("guide")}>Guide</div>
+            {(RESULTS?.summary?.total || 0) > 0 && <span className="tab-pill-count">{RESULTS.summary.total}</span>}
+          </button>
+          <button type="button" className={`tab-pill${tab === "guide" ? " is-active" : ""}`} onClick={() => setTab("guide")}>Guide</button>
         </div>
 
         {/* ==================== SCANNER TAB ==================== */}
         {tab === "scanner" && (
           <div>
             {/* Filters */}
-            <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
-              <select value={filterDate} onChange={e => setFilterDate(e.target.value)}
-                style={{ padding: "6px 12px", background: "#1e293b", color: "#e2e8f0", border: "1px solid #334155", borderRadius: 8, fontSize: 12 }}>
-                <option value="today">Today ({todayDate?.slice(5)})</option>
-                {availableDates.slice(1).map(d => <option key={d} value={d}>{d.slice(5)}</option>)}
-                <option value="all">All Dates</option>
-              </select>
-              <select value={filterCity} onChange={e => setFilterCity(e.target.value)}
-                style={{ padding: "6px 12px", background: "#1e293b", color: "#e2e8f0", border: "1px solid #334155", borderRadius: 8, fontSize: 12 }}>
-                <option value="all">All Cities</option>
-                {cityList.map(c => <option key={c} value={c}>{CITY_NAMES[c]}</option>)}
-              </select>
-              <select value={filterType} onChange={e => setFilterType(e.target.value)}
-                style={{ padding: "6px 12px", background: "#1e293b", color: "#e2e8f0", border: "1px solid #334155", borderRadius: 8, fontSize: 12 }}>
-                <option value="all">All Types</option>
-                <option value="high">Highs</option>
-                <option value="low">Lows</option>
-              </select>
-              <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-                style={{ padding: "6px 12px", background: "#1e293b", color: "#e2e8f0", border: "1px solid #334155", borderRadius: 8, fontSize: 12 }}>
-                <option value="edge">Sort: Edge</option>
-                <option value="ev">Sort: EV</option>
-                <option value="volume">Sort: Volume</option>
-              </select>
-              <span style={{ fontSize: 11, color: "#64748b", marginLeft: "auto" }}>
-                {allEdges.length} contracts
-              </span>
+            <div className="control-bar">
+              <div className="control-group">
+                <span className="control-label">Date</span>
+                <select className="control-select" value={filterDate} onChange={e => setFilterDate(e.target.value)}>
+                  <option value="today">Today ({todayDate?.slice(5)})</option>
+                  {availableDates.slice(1).map(d => <option key={d} value={d}>{d.slice(5)}</option>)}
+                  <option value="all">All Dates</option>
+                </select>
+              </div>
+              <div className="control-group">
+                <span className="control-label">City</span>
+                <select className="control-select" value={filterCity} onChange={e => setFilterCity(e.target.value)}>
+                  <option value="all">All Cities</option>
+                  {cityList.map(c => <option key={c} value={c}>{CITY_NAMES[c]}</option>)}
+                </select>
+              </div>
+              <div className="control-group">
+                <span className="control-label">Type</span>
+                <select className="control-select" value={filterType} onChange={e => setFilterType(e.target.value)}>
+                  <option value="all">All Types</option>
+                  <option value="high">Highs</option>
+                  <option value="low">Lows</option>
+                </select>
+              </div>
+              <div className="control-group">
+                <span className="control-label">Sort</span>
+                <select className="control-select" value={sortBy} onChange={e => setSortBy(e.target.value)}>
+                  <option value="edge">Sort: Edge</option>
+                  <option value="ev">Sort: EV</option>
+                  <option value="volume">Sort: Volume</option>
+                </select>
+              </div>
+              <div className="control-summary">
+                <strong style={{ color: "#ebf4ff" }}>{allEdges.length}</strong> priced contracts on the board
+              </div>
             </div>
 
             {/* ===== SIGNAL CARDS — Paywall-Style Market Cards ===== */}
             {signals.length > 0 && filterCity === "all" && filterType === "all" && (
               <div style={{ marginBottom: 24 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#64748b", letterSpacing: 2, textTransform: "uppercase", marginBottom: 10 }}>
-                  Top Signals
+                <div className="section-header">
+                  <div>
+                    <div className="section-kicker">Live opportunities</div>
+                    <div className="section-title">Top signals</div>
+                  </div>
+                  <div className="section-copy">
+                    Highest-conviction prices first. Same-day highs can include pace-adjusted temperature drift from live observations.
+                  </div>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: 12 }}>
-                  {signals.slice(0, 8).map((e, i) => {
+                <div className="signals-grid">
+                  {signals.slice(0, 8).map((e) => {
                     const obs = OBSERVATIONS?.[e.city] || {};
                     const fcst = getForecastData(e);
                     const isToday = e.date === todayDate;
@@ -256,107 +249,103 @@ function App() {
                     const sigColor = e.signal === "YES" ? "#22c55e" : "#ef4444";
                     const sigBg = e.signal === "YES" ? "rgba(34,197,94,0.08)" : "rgba(239,68,68,0.08)";
                     const sigBorder = e.signal === "YES" ? "rgba(34,197,94,0.2)" : "rgba(239,68,68,0.2)";
+                    const ourWidth = `${Math.max(8, Math.min(100, (e.our_prob || 0) * 100))}%`;
+                    const marketWidth = `${Math.max(8, Math.min(100, (e.market_mid || 0) * 100))}%`;
+                    const paceText = obs.pace_delta != null
+                      ? `${obs.pace_delta > 0 ? "+" : ""}${obs.pace_delta.toFixed(1)}F pace`
+                      : null;
+                    const priceText = buyPrice != null ? `${Math.round(buyPrice * 100)}c entry` : "No entry";
 
                     return (
-                      <div key={i} style={{ background: "#0f172a", borderRadius: 12, overflow: "hidden", border: `1px solid ${sigBorder}` }}>
+                      <article
+                        key={e.ticker}
+                        className="signal-card"
+                        style={{ "--signal-border": sigBorder, "--signal-accent": sigColor, "--signal-bg": sigBg }}
+                      >
+                        <div className="signal-card-topline">
+                          <div className="signal-card-market">
+                            <span className="signal-card-type">{e.type.toUpperCase()}</span>
+                            <span className="signal-card-city">{e.city_name}</span>
+                            <span className="signal-card-date">{formatBoardDate(e.date)}</span>
+                          </div>
+                          <a
+                            href={kalshiUrl(e)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={ev => ev.stopPropagation()}
+                            className="signal-card-link"
+                          >
+                            Kalshi
+                          </a>
+                        </div>
 
-                        {/* Header */}
-                        <div style={{ padding: "12px 16px 8px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                        <div className="signal-card-main">
                           <div>
-                            <div style={{ fontSize: 15, fontWeight: 800, color: "#f1f5f9" }}>
-                              {e.city_name} <span style={{ color: "#475569" }}>&mdash;</span> <span style={{ color: e.type === "high" ? "#ef4444" : "#3b82f6" }}>{e.type.toUpperCase()}</span>
+                            <div className="signal-card-badge">{e.signal}</div>
+                            <div className="signal-card-headline">
+                              {e.strike_type === "less" ? "Under" : e.strike_type === "greater" ? "Over" : "Range"} {e.threshold}F
                             </div>
-                            <div style={{ fontSize: 10, color: "#475569", marginTop: 2, fontFamily: "'Courier New', monospace" }}>
-                              {e.ticker}
+                            <div className="signal-card-subline">
+                              {priceText} · {winProb != null ? `${(winProb * 100).toFixed(0)}% win rate` : "No modeled win rate"}
                             </div>
                           </div>
-                          <div style={{ textAlign: "right" }}>
-                            <div style={{ fontSize: 11, color: "#64748b" }}>{e.date?.slice(5)}</div>
-                            <a href={kalshiUrl(e)} target="_blank" rel="noopener noreferrer"
-                              onClick={ev => ev.stopPropagation()}
-                              style={{ fontSize: 10, color: "#f59e0b", textDecoration: "none", fontWeight: 700 }}>
-                              Kalshi &rarr;
-                            </a>
+                          <div className="signal-card-ev">
+                            <strong>{realEV >= 0 ? "+" : ""}{realEV.toFixed(0)}%</strong>
+                            <span>expected value</span>
                           </div>
                         </div>
 
-                        {/* Recommendation Banner */}
-                        <div style={{ margin: "0 12px", padding: "10px 14px", borderRadius: 8, background: sigBg, border: `1px solid ${sigBorder}` }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                            <span style={{ fontSize: 15, fontWeight: 900, color: sigColor }}>
-                              BET {e.signal} @ {buyPrice != null ? `${Math.round(buyPrice * 100)}¢` : "—"}
-                            </span>
-                            <span style={{ fontSize: 13, fontWeight: 800, color: "#f59e0b" }}>
-                              +{realEV.toFixed(0)}% EV
-                            </span>
+                        <div className="signal-card-stats">
+                          <div className="signal-stat">
+                            <span className="signal-stat-label">{forecastLabel}</span>
+                            <strong>{forecastVal != null ? `${forecastVal.toFixed(1)}°` : "—"}</strong>
                           </div>
-                          <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>
-                            {winProb != null ? `${(winProb * 100).toFixed(0)}% probability of winning` : ""}
+                          <div className="signal-stat">
+                            <span className="signal-stat-label">Threshold</span>
+                            <strong>{e.strike_type === "less" ? "<" : e.strike_type === "greater" ? ">" : ""}{e.threshold}°</strong>
                           </div>
-                        </div>
-
-                        {/* Hero Stats: Forecast / Threshold / Gap */}
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", margin: "12px 12px 0", background: "#0a0f1a", borderRadius: 8, overflow: "hidden" }}>
-                          <div style={{ padding: "10px 8px", textAlign: "center", borderRight: "1px solid #1e293b" }}>
-                            <div style={{ fontSize: 9, fontWeight: 700, color: "#64748b", letterSpacing: 1, marginBottom: 4 }}>{forecastLabel}</div>
-                            <div style={{ fontSize: 20, fontWeight: 900, color: "#e2e8f0" }}>
-                              {forecastVal != null ? `${forecastVal.toFixed(1)}°` : "—"}
-                            </div>
-                          </div>
-                          <div style={{ padding: "10px 8px", textAlign: "center", borderRight: "1px solid #1e293b" }}>
-                            <div style={{ fontSize: 9, fontWeight: 700, color: "#64748b", letterSpacing: 1, marginBottom: 4 }}>THRESHOLD</div>
-                            <div style={{ fontSize: 20, fontWeight: 900, color: "#94a3b8" }}>
-                              {e.strike_type === "less" ? "<" : e.strike_type === "greater" ? ">" : ""}{e.threshold}°
-                            </div>
-                          </div>
-                          <div style={{ padding: "10px 8px", textAlign: "center" }}>
-                            <div style={{ fontSize: 9, fontWeight: 700, color: "#64748b", letterSpacing: 1, marginBottom: 4 }}>GAP</div>
-                            <div style={{ fontSize: 20, fontWeight: 900, color: gap != null ? (gapFavorable ? "#22c55e" : "#f59e0b") : "#64748b" }}>
+                          <div className="signal-stat">
+                            <span className="signal-stat-label">Gap</span>
+                            <strong style={{ color: gap != null ? (gapFavorable ? "#22c55e" : "#f6b756") : "#64748b" }}>
                               {gap != null ? `${gap.toFixed(1)}°` : "—"}
-                            </div>
+                            </strong>
                           </div>
                         </div>
 
-                        {/* Weather Data */}
-                        <div style={{ padding: "10px 16px 6px", fontSize: 11 }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid #1e293b" }}>
-                            <span style={{ color: "#64748b" }}>Ensemble Mean</span>
-                            <span style={{ color: "#e2e8f0", fontWeight: 600 }}>
-                              {fcst.mean != null ? `${fcst.mean.toFixed(1)}°F` : "—"}
-                              {fcst.modelCount && <span style={{ color: "#475569", marginLeft: 4 }}>({fcst.modelCount} models)</span>}
-                            </span>
+                        <div className="signal-probability-panel">
+                          <div className="signal-probability-row">
+                            <div className="signal-probability-label">
+                              <span>Model</span>
+                              <strong>{pct(e.our_prob, 0)}</strong>
+                            </div>
+                            <div className="signal-probability-track">
+                              <div className="signal-probability-fill is-model" style={{ width: ourWidth }} />
+                            </div>
                           </div>
-                          {isToday && obs.temp_f != null && (
-                            <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid #1e293b" }}>
-                              <span style={{ color: "#64748b" }}>Current Observed</span>
-                              <span style={{ color: "#e2e8f0", fontWeight: 600 }}>
-                                {obs.temp_f}°F
-                                {obs.station && <span style={{ color: "#475569", marginLeft: 4 }}>({obs.station})</span>}
-                              </span>
+                          <div className="signal-probability-row">
+                            <div className="signal-probability-label">
+                              <span>Market</span>
+                              <strong>{pct(e.market_mid, 0)}</strong>
                             </div>
-                          )}
-                          {isToday && obs.pace_delta != null && (
-                            <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid #1e293b" }}>
-                              <span style={{ color: "#64748b" }}>Pace</span>
-                              <span style={{ fontWeight: 700, color: obs.pace_delta > 1 ? "#ef4444" : obs.pace_delta < -1 ? "#3b82f6" : "#64748b" }}>
-                                {obs.pace_delta > 0 ? "+" : ""}{obs.pace_delta.toFixed(1)}°F {obs.pace_delta > 1 ? "RUNNING HOT" : obs.pace_delta < -1 ? "RUNNING COLD" : "ON PACE"}
-                              </span>
+                            <div className="signal-probability-track">
+                              <div className="signal-probability-fill is-market" style={{ width: marketWidth }} />
                             </div>
-                          )}
-                          {hasPace && obs.hrrr_high != null && (
-                            <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid #1e293b" }}>
-                              <span style={{ color: "#64748b" }}>HRRR Forecast</span>
-                              <span style={{ color: "#e2e8f0", fontWeight: 600 }}>{obs.hrrr_high}°F</span>
-                            </div>
-                          )}
+                          </div>
+                          <div className="signal-edge-strip">
+                            <span>Edge {signPct(e.edge)}</span>
+                            <span>{fcst.modelCount ? `${fcst.modelCount} models` : "Model count unavailable"}</span>
+                          </div>
                         </div>
 
-                        {/* Footer: Volume + Expires */}
-                        <div style={{ padding: "8px 16px", borderTop: "1px solid #1e293b", display: "flex", justifyContent: "space-between", fontSize: 10, color: "#475569" }}>
-                          <span>Vol: {(e.volume || 0).toLocaleString()}</span>
-                          <span>{timeUntil(e.close_time)}</span>
+                        <div className="signal-card-meta">
+                          <span className="signal-meta-chip">{priceText}</span>
+                          {paceText && <span className="signal-meta-chip">{paceText}</span>}
+                          {isToday && obs.temp_f != null && <span className="signal-meta-chip">Obs {obs.temp_f}F</span>}
+                          {hasPace && obs.hrrr_high != null && <span className="signal-meta-chip">HRRR {obs.hrrr_high}F</span>}
+                          <span className="signal-meta-chip">Vol {(e.volume || 0).toLocaleString()}</span>
+                          <span className="signal-meta-chip">{timeUntil(e.close_time)}</span>
                         </div>
-                      </div>
+                      </article>
                     );
                   })}
                 </div>
@@ -364,7 +353,16 @@ function App() {
             )}
 
             {/* ===== MARKET TABLE ===== */}
-            <div style={{ overflowX: "auto" }}>
+            <div className="section-header">
+              <div>
+                <div className="section-kicker">Scanner</div>
+                <div className="section-title">Market board</div>
+              </div>
+              <div className="section-copy">
+                Full contract list sorted by the signal you care about. Click any row to jump directly into the city breakdown.
+              </div>
+            </div>
+            <div className="table-shell" style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                 <thead>
                   <tr style={{ borderBottom: "1px solid #334155" }}>
@@ -374,11 +372,11 @@ function App() {
                   </tr>
                 </thead>
                 <tbody>
-                  {allEdges.slice(0, 100).map((e, i) => {
+                  {allEdges.slice(0, 100).map((e) => {
                     const bp = getBuyPrice(e);
                     const ev = e.ev || 0;
                     return (
-                      <tr key={i} style={{ borderBottom: "1px solid #1e293b", cursor: "pointer", transition: "background 0.15s" }}
+                      <tr key={e.ticker} style={{ borderBottom: "1px solid #1e293b", cursor: "pointer", transition: "background 0.15s" }}
                         onMouseEnter={ev => ev.currentTarget.style.background = "#1e293b"}
                         onMouseLeave={ev => ev.currentTarget.style.background = "transparent"}
                         onClick={() => { setSelectedCity(e.city); setTab("cities"); }}>
@@ -421,21 +419,27 @@ function App() {
         {tab === "cities" && (
           <div>
             {/* City selector */}
-            <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap", justifyContent: "center" }}>
+            <div className="section-header">
+              <div>
+                <div className="section-kicker">City desk</div>
+                <div className="section-title">Forecast ladders</div>
+              </div>
+              <div className="section-copy">
+                Pick a city to compare the model range, current pace, and live Kalshi thresholds in one place.
+              </div>
+            </div>
+            <div className="city-chip-grid">
               {cityList.map(c => {
                 const isSelected = selectedCity === c;
                 const obs = OBSERVATIONS?.[c] || {};
                 const citySignals = (EDGES || []).filter(e => e.city === c && e.signal).length;
                 return (
-                  <div key={c} onClick={() => setSelectedCity(isSelected ? null : c)}
-                    style={{ padding: "8px 14px", borderRadius: 10, cursor: "pointer", transition: "all 0.2s",
-                      background: isSelected ? "rgba(59,130,246,0.15)" : "#0f172a",
-                      border: isSelected ? "1px solid rgba(59,130,246,0.4)" : "1px solid #1e293b",
-                      color: isSelected ? "#3b82f6" : "#94a3b8" }}>
-                    <div style={{ fontSize: 12, fontWeight: 700 }}>{c}
-                      {citySignals > 0 && <span style={{ fontSize: 8, fontWeight: 800, marginLeft: 4, padding: "1px 4px", borderRadius: 6, background: "#22c55e", color: "#000" }}>{citySignals}</span>}
+                  <div key={c} onClick={() => setSelectedCity(isSelected ? null : c)} className={`city-chip${isSelected ? " is-active" : ""}`}>
+                    <div className="city-chip-code">{c}
+                      {citySignals > 0 && <span className="city-chip-signal">{citySignals}</span>}
                     </div>
-                    {obs.temp_f != null && <div style={{ fontSize: 10, color: "#64748b" }}>{obs.temp_f}F</div>}
+                    <div className="city-chip-temp">{obs.temp_f != null ? `${obs.temp_f}F` : "—"}</div>
+                    <div className="city-chip-meta">{CITY_NAMES[c]}</div>
                   </div>
                 );
               })}
@@ -448,62 +452,147 @@ function App() {
               const allCityEdges = (EDGES || []).filter(e => e.city === selectedCity);
               const obsStale = obs.obs_age_min != null && obs.obs_age_min > 90;
 
-              // Kalshi event URL for a section header
-              const kalshiEventUrl = (edges) => edges[0] ? kalshiUrl(edges[0]) : "#";
-
-              // Helper: model range bar — shows each model's temp as a colored number on a horizontal scale
-              const ModelRange = ({ models, mean, std, typeColor, typeLabel }) => {
+              const ForecastSnapshot = ({ models, mean, std, typeColor, typeLabel, extraChip }) => {
                 if (!models) return null;
-                const temps = Object.values(models);
-                const pad = 2;
-                const lo = Math.floor(Math.min(...temps) - pad);
-                const hi = Math.ceil(Math.max(...temps) + pad);
-                const range = hi - lo;
-                const pos = (t) => Math.max(1, Math.min(99, ((t - lo) / range) * 100));
-                // Sort models by temp for the legend
                 const sorted = Object.entries(models).sort((a, b) => a[1] - b[1]);
+                const temps = sorted.map(([, temp]) => temp);
+                const low = Math.min(...temps);
+                const high = Math.max(...temps);
+                const spread = high - low;
+                const modelSummary = sorted
+                  .map(([model, temp]) => `${MODEL_LABELS[model]} ${temp.toFixed(1)}F`)
+                  .join("  ·  ");
+
                 return (
-                  <div style={{ marginBottom: 16 }}>
-                    {/* Header: "PREDICTED HIGH 76F" style */}
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+                  <div className="forecast-snapshot">
+                    <div className="forecast-snapshot-head">
                       <div>
-                        <span style={{ fontSize: 11, fontWeight: 800, color: typeColor, letterSpacing: 1 }}>PREDICTED {typeLabel} </span>
-                        <span style={{ fontSize: 22, fontWeight: 900, color: typeColor }}>{mean}F</span>
+                        <div className="forecast-snapshot-kicker" style={{ color: typeColor }}>{typeLabel}</div>
+                        <div className="forecast-snapshot-temp">{mean}F</div>
                       </div>
-                      <span style={{ fontSize: 10, color: "#64748b" }}>range {Math.min(...temps).toFixed(0)}-{Math.max(...temps).toFixed(0)}F</span>
+                      <div className="forecast-snapshot-meta">
+                        <span>{low.toFixed(0)}-{high.toFixed(0)}F range</span>
+                        <span>{spread.toFixed(1)}F spread</span>
+                        <span>±{std?.toFixed(1) || "—"}F sigma</span>
+                      </div>
                     </div>
-                    {/* Range bar with model temp numbers */}
-                    <div style={{ position: "relative", height: 36, background: "#1e293b", borderRadius: 6, overflow: "visible", marginBottom: 2 }}>
-                      {/* Ensemble ±1 std band */}
-                      <div style={{ position: "absolute", left: `${pos(mean - std)}%`, width: `${Math.max(pos(mean + std) - pos(mean - std), 1)}%`, height: "100%", background: `${typeColor}18`, borderRadius: 4 }} />
-                      {/* Ensemble mean line */}
-                      <div style={{ position: "absolute", left: `${pos(mean)}%`, top: 0, width: 2, height: "100%", background: typeColor, zIndex: 2, borderRadius: 1 }} />
-                      {/* Mean label on top */}
-                      <div style={{ position: "absolute", left: `${pos(mean)}%`, top: -14, transform: "translateX(-50%)", fontSize: 9, fontWeight: 800, color: typeColor, whiteSpace: "nowrap" }}>{mean}F</div>
-                      {/* Model temp numbers positioned on the bar */}
-                      {sorted.map(([m, t], i) => (
-                        <div key={m} style={{ position: "absolute", left: `${pos(t)}%`, top: "50%", transform: "translate(-50%, -50%)", zIndex: 3, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                          <span style={{ fontSize: 11, fontWeight: 800, color: MODEL_COLORS[m] || "#94a3b8", textShadow: "0 0 4px #0f172a, 0 0 4px #0f172a", whiteSpace: "nowrap", lineHeight: 1 }}>
-                            {t.toFixed(0)}
-                          </span>
-                        </div>
+
+                    <div className="forecast-chip-row">
+                      <span className="forecast-chip">Ensemble {mean}F</span>
+                      {extraChip ? <span className="forecast-chip">{extraChip}</span> : null}
+                    </div>
+
+                    <div className="forecast-model-summary">
+                      {sorted.map(([model]) => (
+                        <span key={model} className="forecast-model-dot" style={{ "--model-color": MODEL_COLORS[model] || "#94a3b8" }} />
                       ))}
-                    </div>
-                    {/* Scale endpoints */}
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ fontSize: 9, color: "#475569" }}>{lo}F</span>
-                      <span style={{ fontSize: 9, color: "#475569" }}>{hi}F</span>
-                    </div>
-                    {/* Model legend — compact row */}
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
-                      {sorted.map(([m, t]) => (
-                        <span key={m} style={{ fontSize: 9, display: "flex", alignItems: "center", gap: 3 }}>
-                          <span style={{ fontSize: 10, fontWeight: 800, color: MODEL_COLORS[m] || "#94a3b8" }}>{MODEL_LABELS[m]}</span>
-                          <span style={{ color: "#64748b" }}>{t}F</span>
-                        </span>
-                      ))}
+                      <span>{modelSummary}</span>
                     </div>
                   </div>
+                );
+              };
+
+              const getContractAnchor = (edge) => {
+                if (edge.strike_type === "between") {
+                  const parts = String(edge.threshold).split("-").map(Number);
+                  if (parts.length === 2 && parts.every((part) => !Number.isNaN(part))) {
+                    return (parts[0] + parts[1]) / 2;
+                  }
+                }
+                const numeric = parseFloat(edge.threshold);
+                return Number.isNaN(numeric) ? null : numeric;
+              };
+
+              const pickCoverageRows = (edges, referenceTemp) => {
+                if (!edges.length) return [];
+
+                const picks = [];
+                const seen = new Set();
+                const addPick = (edge, label) => {
+                  if (!edge || seen.has(edge.ticker)) return;
+                  picks.push({ edge, label });
+                  seen.add(edge.ticker);
+                };
+
+                const strongestSignal = [...edges]
+                  .filter((edge) => edge.signal)
+                  .sort((a, b) => Math.abs(b.edge || 0) - Math.abs(a.edge || 0))[0];
+                addPick(strongestSignal, "signal");
+
+                const nearestLine = [...edges]
+                  .filter((edge) => getContractAnchor(edge) != null && referenceTemp != null)
+                  .sort((a, b) => Math.abs(getContractAnchor(a) - referenceTemp) - Math.abs(getContractAnchor(b) - referenceTemp))[0];
+                addPick(nearestLine, "closest");
+
+                const biggestDisagreement = [...edges]
+                  .sort((a, b) => Math.abs(b.edge || 0) - Math.abs(a.edge || 0))[0];
+                addPick(biggestDisagreement, "largest edge");
+
+                return picks;
+              };
+
+              const CoverageRows = ({ edges, eventUrl, referenceTemp }) => {
+                if (!edges.length) return null;
+                const featuredRows = pickCoverageRows(edges, referenceTemp);
+                return (
+                  <>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: "#64748b", letterSpacing: 1 }}>COVERAGE LADDER</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        {edges.length > featuredRows.length ? (
+                          <span style={{ fontSize: 10, color: "#64748b" }}>showing {featuredRows.length} of {edges.length}</span>
+                        ) : null}
+                        {eventUrl && <a href={eventUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, fontWeight: 700, color: "#f59e0b", textDecoration: "none", letterSpacing: 1 }}>KALSHI LIVE &rarr;</a>}
+                      </div>
+                    </div>
+                    <div className="coverage-row-list">
+                      {featuredRows.map(({ edge: e, label }) => {
+                        const edgeVal = e.edge || 0;
+                        const signalColor = e.signal ? getSignalColor(e.signal) : "#64748b";
+                        const side = edgeVal >= 0 ? "YES" : "NO";
+                        const actionLabel = e.signal ? `BET ${e.signal}` : `${side} lean`;
+                        const actionTone = e.signal ? signalColor : edgeVal >= 0 ? "#22c55e" : "#ef4444";
+                        return (
+                          <a
+                            key={e.ticker}
+                            href={kalshiUrl(e)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="coverage-row"
+                            style={{ borderColor: e.signal ? `${signalColor}66` : "#1e293b" }}
+                          >
+                            <div className="coverage-row-main">
+                              <div className="coverage-row-label">{label}</div>
+                              <div className="coverage-row-threshold">
+                                {e.strike_type === "less" ? "<" : e.strike_type === "greater" ? ">" : ""}{e.threshold}F
+                              </div>
+                              <div className="coverage-row-probs">
+                                <span>Us {pct(e.our_prob)}</span>
+                                <span>Mkt {pct(e.market_mid)}</span>
+                              </div>
+                            </div>
+                            <div className="coverage-row-side">
+                              <div className="coverage-row-action">
+                                <span className="coverage-row-action-chip" style={{ background: `${actionTone}18`, color: actionTone, borderColor: `${actionTone}55` }}>
+                                  {actionLabel}
+                                </span>
+                              </div>
+                              <div className="coverage-row-edge" style={{ color: edgeVal > 0 ? "#22c55e" : "#ef4444" }}>
+                                {signPct(edgeVal)}
+                              </div>
+                              {e.signal ? (
+                                <span className="coverage-row-signal" style={{ background: signalColor }}>
+                                  {e.signal}
+                                </span>
+                              ) : (
+                                <span className="coverage-row-note">watch</span>
+                              )}
+                            </div>
+                          </a>
+                        );
+                      })}
+                    </div>
+                  </>
                 );
               };
 
@@ -513,7 +602,7 @@ function App() {
                   <div style={{ background: "#0f172a", borderRadius: 12, padding: "16px 20px", marginBottom: 16, border: "1px solid #1e293b" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
                       <div>
-                        <h2 style={{ fontFamily: "Outfit", fontSize: 24, fontWeight: 900, color: "#f1f5f9", margin: 0 }}>{CITY_NAMES[selectedCity]}</h2>
+                        <h2 style={{ fontFamily: "Syne, sans-serif", fontSize: 24, fontWeight: 900, color: "#f1f5f9", margin: 0 }}>{CITY_NAMES[selectedCity]}</h2>
                         <span style={{ fontSize: 11, color: "#64748b" }}>{selectedCity}</span>
                       </div>
                       {obs.temp_f != null && (
@@ -562,71 +651,28 @@ function App() {
 
                       {/* HIGH section */}
                       <div style={{ marginBottom: 20 }}>
-                        <ModelRange models={ens.high_models} mean={ens.high_mean} std={ens.high_std} typeColor="#ef4444" typeLabel="HIGH" />
-                        {/* Coverage Ladder */}
-                        {highEdges.length > 0 && (<>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                            <span style={{ fontSize: 10, fontWeight: 700, color: "#64748b", letterSpacing: 1 }}>COVERAGE LADDER</span>
-                            {highEventUrl && <a href={highEventUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, fontWeight: 700, color: "#f59e0b", textDecoration: "none", letterSpacing: 1 }}>KALSHI LIVE &rarr;</a>}
-                          </div>
-                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                            {highEdges.map((e, i) => {
-                              const hasEdge = Math.abs(e.edge) >= (META?.edge_threshold || 0.05);
-                              const edgeVal = e.edge || 0;
-                              const isSignal = e.signal != null;
-                              return (
-                              <a key={i} href={kalshiUrl(e)} target="_blank" rel="noopener noreferrer"
-                                style={{ flex: "1 1 72px", minWidth: 72, maxWidth: 120, padding: "8px 6px", borderRadius: 8, textAlign: "center", textDecoration: "none",
-                                  background: isSignal ? `${getSignalColor(e.signal)}0d` : "#0a0f1a",
-                                  border: `1px solid ${isSignal ? getSignalColor(e.signal) + "55" : "#1e293b"}` }}>
-                                <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 2 }}>
-                                  {e.strike_type === "less" ? `< ${e.threshold}` : e.strike_type === "greater" ? `> ${e.threshold}` : e.threshold}F
-                                </div>
-                                <div style={{ fontSize: 16, fontWeight: 900, color: "#e2e8f0" }}>{pct(e.our_prob)}</div>
-                                <div style={{ fontSize: 10, color: "#64748b" }}>KSH {pct(e.market_mid)}</div>
-                                {hasEdge && <div style={{ fontSize: 10, fontWeight: 800, color: edgeVal > 0 ? "#22c55e" : "#ef4444", marginTop: 1 }}>
-                                  {edgeVal > 0 ? "+" : ""}{(edgeVal * 100).toFixed(0)}%
-                                </div>}
-                              </a>
-                              );
-                            })}
-                          </div>
-                        </>)}
+                        <ForecastSnapshot
+                          models={ens.high_models}
+                          mean={ens.high_mean}
+                          std={ens.high_std}
+                          typeColor="#ef4444"
+                          typeLabel="HIGH"
+                          extraChip={date === todayDate && obs.pace_delta != null ? `Pace ${obs.pace_delta > 0 ? "+" : ""}${obs.pace_delta.toFixed(1)}F` : null}
+                        />
+                        <CoverageRows edges={highEdges} eventUrl={highEventUrl} referenceTemp={ens.high_mean} />
                       </div>
 
                       {/* LOW section */}
                       {ens.low_mean && (
                         <div>
-                          <ModelRange models={ens.low_models} mean={ens.low_mean} std={ens.low_std} typeColor="#3b82f6" typeLabel="LOW" />
-                          {/* Coverage Ladder */}
-                          {lowEdges.length > 0 && (<>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                              <span style={{ fontSize: 10, fontWeight: 700, color: "#64748b", letterSpacing: 1 }}>COVERAGE LADDER</span>
-                              {lowEventUrl && <a href={lowEventUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, fontWeight: 700, color: "#f59e0b", textDecoration: "none", letterSpacing: 1 }}>KALSHI LIVE &rarr;</a>}
-                            </div>
-                            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                              {lowEdges.map((e, i) => {
-                                const hasEdge = Math.abs(e.edge) >= (META?.edge_threshold || 0.05);
-                                const edgeVal = e.edge || 0;
-                                const isSignal = e.signal != null;
-                                return (
-                                <a key={i} href={kalshiUrl(e)} target="_blank" rel="noopener noreferrer"
-                                  style={{ flex: "1 1 72px", minWidth: 72, maxWidth: 120, padding: "8px 6px", borderRadius: 8, textAlign: "center", textDecoration: "none",
-                                    background: isSignal ? `${getSignalColor(e.signal)}0d` : "#0a0f1a",
-                                    border: `1px solid ${isSignal ? getSignalColor(e.signal) + "55" : "#1e293b"}` }}>
-                                  <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 2 }}>
-                                    {e.strike_type === "less" ? `< ${e.threshold}` : e.strike_type === "greater" ? `> ${e.threshold}` : e.threshold}F
-                                  </div>
-                                  <div style={{ fontSize: 16, fontWeight: 900, color: "#e2e8f0" }}>{pct(e.our_prob)}</div>
-                                  <div style={{ fontSize: 10, color: "#64748b" }}>KSH {pct(e.market_mid)}</div>
-                                  {hasEdge && <div style={{ fontSize: 10, fontWeight: 800, color: edgeVal > 0 ? "#22c55e" : "#ef4444", marginTop: 1 }}>
-                                    {edgeVal > 0 ? "+" : ""}{(edgeVal * 100).toFixed(0)}%
-                                  </div>}
-                                </a>
-                                );
-                              })}
-                            </div>
-                          </>)}
+                          <ForecastSnapshot
+                            models={ens.low_models}
+                            mean={ens.low_mean}
+                            std={ens.low_std}
+                            typeColor="#3b82f6"
+                            typeLabel="LOW"
+                          />
+                          <CoverageRows edges={lowEdges} eventUrl={lowEventUrl} referenceTemp={ens.low_mean} />
                         </div>
                       )}
                     </div>
@@ -637,8 +683,8 @@ function App() {
             })()}
 
             {!selectedCity && (
-              <div style={{ textAlign: "center", padding: 40, color: "#475569" }}>
-                Select a city above to view forecasts and markets
+              <div className="empty-state">
+                Select a city above to open its forecast stack and live contract ladder.
               </div>
             )}
           </div>
@@ -683,15 +729,20 @@ function App() {
           return (
           <div>
             {/* View toggle */}
-            <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 20 }}>
+            <div className="section-header">
+              <div>
+                <div className="section-kicker">Track record</div>
+                <div className="section-title">Resolved performance</div>
+              </div>
+              <div className="section-copy">
+                Results stay separated from the live scanner so current opportunities and historical outcomes do not compete for attention.
+              </div>
+            </div>
+            <div className="results-toggle">
               {[["last100", "Last 100"], ["overall", "Overall"]].map(([key, label]) => (
-                <div key={key} onClick={() => setResultsView(key)}
-                  style={{ padding: "6px 16px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 700,
-                    background: resultsView === key ? "rgba(59,130,246,0.15)" : "transparent",
-                    color: resultsView === key ? "#3b82f6" : "#64748b",
-                    border: resultsView === key ? "1px solid rgba(59,130,246,0.3)" : "1px solid transparent" }}>
+                <button key={key} type="button" className={resultsView === key ? "is-active" : ""} onClick={() => setResultsView(key)}>
                   {label}
-                </div>
+                </button>
               ))}
             </div>
 
@@ -699,7 +750,7 @@ function App() {
             {viewSummary.total === 0 && (
               <div style={{ textAlign: "center", padding: "60px 20px" }}>
                 <div style={{ fontSize: 40, marginBottom: 12 }}>&#x1f4ca;</div>
-                <h3 style={{ fontFamily: "Outfit", fontSize: 20, fontWeight: 800, color: "#f1f5f9", marginBottom: 8 }}>No Results Yet</h3>
+                <h3 style={{ fontFamily: "Syne, sans-serif", fontSize: 20, fontWeight: 800, color: "#f1f5f9", marginBottom: 8 }}>No Results Yet</h3>
                 <p style={{ fontSize: 13, color: "#64748b", lineHeight: 1.6, maxWidth: 400, margin: "0 auto" }}>
                   Picks resolve when markets close — typically early morning UTC the day after the forecast.
                   First results will appear within 24h of the pipeline going live.
@@ -787,10 +838,10 @@ function App() {
                         </tr>
                       </thead>
                       <tbody>
-                        {picks.map((p, i) => {
+                        {picks.map((p) => {
                           const isWin = p.result === "WIN";
                           return (
-                          <tr key={i} style={{ borderBottom: "1px solid #1e293b" }}>
+                          <tr key={`${p.resolved_at}-${p.city}-${p.threshold}-${p.signal}`} style={{ borderBottom: "1px solid #1e293b" }}>
                             <td style={{ padding: "6px 4px", fontSize: 14 }}>{isWin ? "\u2705" : "\u274c"}</td>
                             <td style={{ padding: "6px 6px", color: "#94a3b8" }}>{p.date?.slice(5)}</td>
                             <td style={{ padding: "6px 6px", fontWeight: 600, color: "#f1f5f9" }}>{p.city}</td>
@@ -824,7 +875,7 @@ function App() {
 
         {/* ==================== GUIDE TAB ==================== */}
         {tab === "guide" && (
-          <div style={{ maxWidth: 640, margin: "0 auto" }}>
+          <div className="guide-shell" style={{ maxWidth: 760, margin: "0 auto" }}>
             {[
               {
                 title: "How It Works",
@@ -848,7 +899,7 @@ function App() {
               },
             ].map((section, i) => (
               <div key={i} style={{ background: "#0f172a", borderRadius: 12, padding: "16px 20px", marginBottom: 12, border: "1px solid #1e293b" }}>
-                <h3 style={{ fontFamily: "Outfit", fontSize: 16, fontWeight: 800, color: "#f1f5f9", marginBottom: 8 }}>{section.title}</h3>
+                <h3 style={{ fontFamily: "Syne, sans-serif", fontSize: 16, fontWeight: 800, color: "#f1f5f9", marginBottom: 8 }}>{section.title}</h3>
                 <p style={{ fontSize: 13, lineHeight: 1.6, color: "#94a3b8" }}>{section.content}</p>
               </div>
             ))}
@@ -858,12 +909,12 @@ function App() {
         {/* FOOTER */}
         <div style={{ textAlign: "center", marginTop: 40, paddingBottom: 24 }}>
           <a href="https://www.buymeacoffee.com/Trickriggin" target="_blank" rel="noopener noreferrer"
-            style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 24px", background: "linear-gradient(135deg, #3b82f6, #06b6d4)", color: "#fff", borderRadius: 8, fontFamily: "Outfit, sans-serif", fontSize: 14, fontWeight: 800, textDecoration: "none", transition: "transform 0.2s, box-shadow 0.2s", boxShadow: "0 2px 8px rgba(59,130,246,0.3)", letterSpacing: 0.5 }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 24px", background: "linear-gradient(135deg, #3b82f6, #06b6d4)", color: "#fff", borderRadius: 8, fontFamily: "Syne, sans-serif", fontSize: 14, fontWeight: 800, textDecoration: "none", transition: "transform 0.2s, box-shadow 0.2s", boxShadow: "0 2px 8px rgba(59,130,246,0.3)", letterSpacing: 0.5 }}
             onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.05)"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(59,130,246,0.5)"; }}
             onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "0 2px 8px rgba(59,130,246,0.3)"; }}>
             Donate Tokens
           </a>
-          <p style={{ fontSize: 11, color: "#334155", marginTop: 12, letterSpacing: 1 }}>PLEASE GAMBLE RESPONSIBLY</p>
+          <p className="footer-note">Please gamble responsibly</p>
         </div>
       </div>
     </div>

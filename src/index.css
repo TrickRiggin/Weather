@@ -6,8 +6,9 @@
 
 body {
   min-height: 100vh;
-  background: #0a0f1a;
+  background: #06111d;
   color: #e2e8f0;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
