@@ -8,7 +8,7 @@ Weather market prediction platform. React 19 + Vite frontend, Python data pipeli
 
 ## Key Files
 - `src/App.jsx` — React frontend (Scanner, Cities, Guide tabs)
-- `refresh_weather.py` — Python pipeline (OpenMeteo, Kalshi, NWS, AI analysis, historical tracking)
+- `refresh_weather.py` — Python pipeline (OpenMeteo, Kalshi, NWS, pace tracking, historical tracking)
 - Auto-generated JS: `markets.js`, `forecasts.js`, `edges.js`, `observations.js`, `ai_analysis.js`, `meta.js`, `results.js`
 - `data/signals.jsonl` — Historical edge signal snapshots (append-only)
 - `data/resolutions.jsonl` — Resolved signals with actual temps, WIN/LOSS, P&L
@@ -31,18 +31,26 @@ Weather market prediction platform. React 19 + Vite frontend, Python data pipeli
   - `with_nested_markets=true` is critical on the events endpoint
 - **NWS Observation API** (free) — current temps for pace tracking
   - Airport stations: KNYC, KLAX, KMDW, KMIA, KDFW, KDEN, KPHL, KATL, KIAH, KPHX
-- **OpenRouter** (`OPENROUTER_API_KEY`) — Claude Sonnet + GPT-4.1-mini for AI analysis
+- **OpenRouter** — REMOVED (AI analysis dropped — singular model temps don't benefit from LLM interpretation)
 
 ### 10 Cities (High-Volume Kalshi Markets)
 NYC, LAX, CHI, MIA, DAL, DEN, PHI, ATL, HOU, PHX
 
-### Spread Formula
+### Edge Calculation (Pace-Aware, Horizon-Weighted)
 ```
-ensemble_mean = avg(model_highs)  # or lows
-ensemble_std = max(std(model_highs), SIGMA_FLOOR)  # SIGMA_FLOOR = 3.5F
-P(above T) = 1 - normCDF((T - ensemble_mean) / ensemble_std)
+# Day 0 highs with pace data:
+mean = HRRR_forecast_high + pace_delta  # pace-adjusted reality
+# Day 0 lows / Day 1:
+mean = weighted_avg(HRRR*2, NBM*1, ECMWF*0.5)  # day 0 weights
+mean = weighted_avg(HRRR*1, NBM*1.2, ECMWF*0.8)  # day 1 weights
+# Day 2+:
+mean = weighted_avg(NBM*1.2, ECMWF*1.0)  # HRRR nulls out
+
+std = max(model_std, SIGMA_FLOOR)  # SIGMA_FLOOR = 3.5F
+P(above T) = 1 - normCDF((T - mean) / std)
 edge = our_probability - kalshi_midpoint
 signal = YES/NO when |edge| >= 5%
+EV capped at 300% (if higher, model is probably wrong, not market)
 ```
 
 ### Pace Tracking (Intraday)
@@ -50,23 +58,18 @@ signal = YES/NO when |edge| >= 5%
 - NWS gives current observed temperature
 - pace_delta = observed - HRRR_expected_at_this_hour
 - adjusted_high = HRRR_forecast_high + pace_delta
-- Timezone offsets hardcoded (no pytz): ET=-4, CT=-5, MT=-6, PT=-7, AZ=-7
-
-### AI Analysis
-- Claude Sonnet + GPT-4.1-mini via OpenRouter
-- Fed top 15 edge signals + ensemble data
-- Return structured JSON with picks + confidence (STRONG/LEAN/SKIP)
-- Runs on every refresh (fast enough, cheap enough)
+- **Pace now feeds into edge probability** for day 0 highs (not just display)
+- Uses `zoneinfo.ZoneInfo` for timezone conversion (Python 3.9+)
 
 ## Refresh Schedule
 - **Every 20-30 min** — cron-job.org -> `repository_dispatch` (type: `light-refresh`)
 - Single workflow handles everything (no heavy/light split — pipeline runs in ~45s)
-- Full pipeline: OpenMeteo forecasts -> ensemble -> Kalshi markets -> edges -> NWS obs -> pace -> AI analysis -> record signals -> resolve past signals -> write src/
+- Full pipeline: OpenMeteo forecasts -> ensemble -> NWS obs -> pace -> Kalshi markets -> edges (pace-aware) -> record signals -> resolve past signals -> write src/
 
 ## UI
 - Dark theme (#0f172a backgrounds, blue/cyan #3b82f6/#06b6d4 gradient accents)
 - Mobile-friendly, same family aesthetic as other AA apps
-- **Scanner tab**: Paywall-style market cards (recommendation + forecast/threshold/gap + weather data + AI picks) + simplified market table
+- **Scanner tab**: Paywall-style market cards (recommendation banner + forecast/threshold/gap + weather data) + simplified market table
 - **Cities tab**: City selector with current temps, 3-day forecast, model breakdown, pace indicator, per-city edges
 - **Results tab**: Track record — hero stats (win rate, record, streak, P&L, ROI), edge tier breakdown with progress bars, YES/NO direction cards, per-pick table with actual temps
 - **Guide tab**: Methodology explanation
@@ -84,7 +87,7 @@ signal = YES/NO when |edge| >= 5%
 
 ## Secrets (GitHub + .env)
 - `OPENMETEO_API_KEY` — paid tier, avoids rate limits
-- `OPENROUTER_API_KEY` — Claude/GPT AI analysis
+- `OPENROUTER_API_KEY` — no longer used (AI analysis removed), still in secrets
 - `KALSHI_API_KEY` — not currently used (read-only is unauthenticated) but available
 - `KALSHI_RSA_KEY` — same, for future trading integration
 
@@ -93,14 +96,13 @@ signal = YES/NO when |edge| >= 5%
 - **Resolution**: Each refresh checks if past signals' markets have closed (close_time + 2h), fetches actual temps from NWS observations, scores WIN/LOSS with P&L
 - **Actual temps source**: NWS airport station observations (same stations as pace tracker) — max/min temp for the date in the city's local timezone
 - **P&L model**: $1 bet at market ask (YES signals) or 1-bid (NO signals), collect $1 on win
-- **Backtest report**: `python refresh_weather.py --backtest` — win rate, P&L by edge bucket/city/type/direction, AI pick accuracy, calibration
-- **Signal schema**: `{id, snapshot_ts, city, date, type, ticker, strike_type, floor, cap, threshold, our_prob, market_mid, edge, signal, ev, yes_bid, yes_ask, volume, close_time, ensemble_mean, ensemble_std, model_count, pace_delta, ai}`
-- **Resolution schema**: `{signal_id, ticker, city, date, type, threshold, signal, edge, our_prob, market_mid, ensemble_mean, ensemble_std, actual_temp, contract_resolved_yes, result, buy_price, pnl, ai, resolved_at}`
+- **Backtest report**: `python refresh_weather.py --backtest` — win rate, P&L by edge bucket/city/type/direction, calibration
+- **Signal schema**: `{id, snapshot_ts, city, date, type, ticker, strike_type, floor, cap, threshold, our_prob, market_mid, edge, signal, ev, yes_bid, yes_ask, volume, close_time, ensemble_mean, ensemble_std, model_count, pace_delta}`
+- **Resolution schema**: `{signal_id, ticker, city, date, type, threshold, signal, edge, our_prob, market_mid, ensemble_mean, ensemble_std, actual_temp, contract_resolved_yes, result, buy_price, pnl, resolved_at}`
 
 ## Future Ideas
 - City-specific sigma floors (calibrate from historical forecast error — now possible with backtest data)
-- Horizon-based model weighting (HRRR heavy for day 0, ECMWF heavy for day 2+)
-- Pace-adjusted ensemble feeding back into edge calculation
+- Pace adjustment for lows (currently only highs get pace-corrected)
 - Telegram alerts for high-edge opportunities
 - Expand to 20 cities (all Kalshi markets)
 - Rain/snow/wind contract support
