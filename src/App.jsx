@@ -123,7 +123,7 @@ function App() {
     else if (sortBy === "volume") filtered.sort((a, b) => (b.volume || 0) - (a.volume || 0));
 
     return filtered;
-  }, [filterCity, filterType, sortBy]);
+  }, [activeDate, filterCity, filterType, sortBy]);
 
   const cityList = Object.keys(CITY_NAMES);
 
