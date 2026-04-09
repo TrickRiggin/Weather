@@ -1,21 +1,21 @@
 export const RESULTS = {
   "summary": {
-    "total": 9,
+    "total": 11,
     "wins": 3,
-    "losses": 6,
-    "win_rate": 0.3333,
-    "total_pnl": -1.05,
-    "total_risked": 4.05,
-    "roi": -25.9,
-    "current_streak": -1
+    "losses": 8,
+    "win_rate": 0.2727,
+    "total_pnl": -1.6,
+    "total_risked": 4.6,
+    "roi": -34.8,
+    "current_streak": -3
   },
   "tiers": [
     {
       "label": "STRONG",
       "desc": "20%+ edge",
-      "total": 5,
+      "total": 6,
       "wins": 1,
-      "pnl": -0.37
+      "pnl": -0.82
     },
     {
       "label": "SOLID",
@@ -27,26 +27,56 @@ export const RESULTS = {
     {
       "label": "LEAN",
       "desc": "5-10%",
-      "total": 2,
+      "total": 3,
       "wins": 1,
-      "pnl": -0.74
+      "pnl": -0.84
     }
   ],
   "directions": [
     {
       "label": "YES",
-      "total": 4,
+      "total": 5,
       "wins": 1,
-      "pnl": -0.15
+      "pnl": -0.25
     },
     {
       "label": "NO",
-      "total": 5,
+      "total": 6,
       "wins": 2,
-      "pnl": -0.9
+      "pnl": -1.35
     }
   ],
   "picks": [
+    [
+      "2026-04-09T15:15:31Z",
+      "DAL",
+      "2026-04-08",
+      "low",
+      57,
+      "NO",
+      -0.3615,
+      0.3985,
+      0.76,
+      57.2,
+      "LOSS",
+      0.45,
+      -0.45
+    ],
+    [
+      "2026-04-09T15:15:31Z",
+      "DAL",
+      "2026-04-08",
+      "high",
+      81,
+      "YES",
+      0.0615,
+      0.1265,
+      0.065,
+      78.8,
+      "LOSS",
+      0.1,
+      -0.1
+    ],
     [
       "2026-04-09T14:35:12Z",
       "MIA",
