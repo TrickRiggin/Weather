@@ -22,6 +22,9 @@ const MODEL_COLORS = {
   ncep_hrrr_conus: "#06b6d4", ncep_nbm_conus: "#f97316", ecmwf_ifs025: "#22c55e",
 };
 
+const EDGE_THRESHOLD = META?.edge_threshold ?? 0.12;
+const MAX_DISAGREEMENT = META?.max_disagreement ?? 0.2;
+
 // ========== HELPERS ==========
 const pct = (v, digits = 0) => v != null ? `${(v * 100).toFixed(digits)}%` : "—";
 const signPct = (v) => v != null ? `${v > 0 ? "+" : ""}${(v * 100).toFixed(1)}%` : "—";
@@ -74,6 +77,75 @@ const formatBoardDate = (dateStr) => {
   });
 };
 
+const getLocalIsoDate = () => new Date().toLocaleDateString("sv-SE");
+
+const pickBoardDate = (dates) => {
+  if (!dates.length) return "";
+  const localToday = getLocalIsoDate();
+  if (dates.includes(localToday)) return localToday;
+  return dates.find((date) => date > localToday) || dates[dates.length - 1];
+};
+
+const getRecommendationState = (edge) => {
+  if (edge?.signal) {
+    const color = getSignalColor(edge.signal);
+    return {
+      label: edge.signal,
+      detail: "Actionable",
+      background: color,
+      border: color,
+      text: "#ffffff",
+    };
+  }
+
+  const absEdge = Math.abs(edge?.edge || 0);
+
+  if (edge?.strike_type === "between") {
+    return {
+      label: "RANGE",
+      detail: "Bucket only",
+      background: "rgba(148, 163, 184, 0.12)",
+      border: "rgba(148, 163, 184, 0.22)",
+      text: "#cbd5e1",
+    };
+  }
+
+  if (absEdge > MAX_DISAGREEMENT) {
+    return {
+      label: "PASS",
+      detail: "Kill switch",
+      background: "rgba(245, 158, 11, 0.12)",
+      border: "rgba(245, 158, 11, 0.24)",
+      text: "#f6b756",
+    };
+  }
+
+  if (absEdge < EDGE_THRESHOLD) {
+    return {
+      label: "NO BET",
+      detail: "Below floor",
+      background: "rgba(100, 116, 139, 0.14)",
+      border: "rgba(100, 116, 139, 0.24)",
+      text: "#94a3b8",
+    };
+  }
+
+  return {
+    label: "WATCH",
+    detail: "No entry",
+    background: "rgba(59, 130, 246, 0.12)",
+    border: "rgba(59, 130, 246, 0.24)",
+    text: "#93c5fd",
+  };
+};
+
+const getPriceLabel = (edge) => {
+  const buyPrice = getBuyPrice(edge);
+  if (buyPrice != null) return `${Math.round(buyPrice * 100)}¢ entry`;
+  if (edge?.market_mid != null) return `${Math.round(edge.market_mid * 100)}¢ mid`;
+  return "—";
+};
+
 
 function App() {
   const [tab, setTab] = useState("scanner");
@@ -90,7 +162,8 @@ function App() {
     [...new Set((EDGES || []).map(e => e.date).filter(Boolean))].sort(),
     []
   );
-  const todayDate = availableDates[0] || "";
+  const todayDate = pickBoardDate(availableDates);
+  const todayOptionLabel = todayDate === getLocalIsoDate() ? "Today" : "Latest";
 
   // Kalshi URL builder — links to the event page (one URL per city+date+type)
   const kalshiUrl = (edge) => {
@@ -123,6 +196,11 @@ function App() {
 
     return filtered;
   }, [activeDate, filterCity, filterType, sortBy]);
+
+  const boardStatus = useMemo(() => ({
+    rangeOnly: allEdges.filter((edge) => !edge.signal && edge.strike_type === "between" && Math.abs(edge.edge || 0) >= EDGE_THRESHOLD).length,
+    killed: allEdges.filter((edge) => !edge.signal && edge.strike_type !== "between" && Math.abs(edge.edge || 0) > MAX_DISAGREEMENT).length,
+  }), [allEdges]);
 
   const cityList = Object.keys(CITY_NAMES);
   const activeDateLabel = activeDate ? formatBoardDate(activeDate) : "All dates";
@@ -175,8 +253,8 @@ function App() {
               <div className="control-group">
                 <span className="control-label">Date</span>
                 <select className="control-select" value={filterDate} onChange={e => setFilterDate(e.target.value)}>
-                  <option value="today">Today ({todayDate?.slice(5)})</option>
-                  {availableDates.slice(1).map(d => <option key={d} value={d}>{d.slice(5)}</option>)}
+                  <option value="today">{todayOptionLabel} ({todayDate?.slice(5)})</option>
+                  {availableDates.filter(d => d !== todayDate).map(d => <option key={d} value={d}>{d.slice(5)}</option>)}
                   <option value="all">All Dates</option>
                 </select>
               </div>
@@ -352,6 +430,20 @@ function App() {
               </div>
             )}
 
+            {signals.length === 0 && filterCity === "all" && filterType === "all" && (
+              <div className="scanner-note">
+                <strong>No actionable signals for {activeDateLabel}.</strong>
+                <span>
+                  {boardStatus.rangeOnly > 0
+                    ? ` ${boardStatus.rangeOnly} of the biggest moves are range buckets, which the model shows for context but never recommends.`
+                    : ""}
+                  {boardStatus.killed > 0
+                    ? ` ${boardStatus.killed} more were blocked by the ${Math.round(MAX_DISAGREEMENT * 100)}% disagreement kill switch.`
+                    : ""}
+                </span>
+              </div>
+            )}
+
             {/* ===== MARKET TABLE ===== */}
             <div className="section-header">
               <div>
@@ -366,7 +458,7 @@ function App() {
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                 <thead>
                   <tr style={{ borderBottom: "1px solid #334155" }}>
-                    {["Market", "Edge", "EV", "Rec", "Price", "Vol", "Expires"].map(h => (
+                    {["Market", "Edge", "EV", "Status", "Price", "Vol", "Expires"].map(h => (
                       <th key={h} style={{ padding: "8px 6px", textAlign: "left", color: "#64748b", fontWeight: 700, letterSpacing: 0.5, fontSize: 10, textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
                     ))}
                   </tr>
@@ -375,6 +467,7 @@ function App() {
                   {allEdges.slice(0, 100).map((e) => {
                     const bp = getBuyPrice(e);
                     const ev = e.ev || 0;
+                    const rec = getRecommendationState(e);
                     return (
                       <tr key={e.ticker} style={{ borderBottom: "1px solid #1e293b", cursor: "pointer", transition: "background 0.15s" }}
                         onMouseEnter={ev => ev.currentTarget.style.background = "#1e293b"}
@@ -394,15 +487,21 @@ function App() {
                         </td>
                         <td style={{ padding: "8px 6px", fontWeight: 800, color: getEdgeColor(e.edge) }}>{signPct(e.edge)}</td>
                         <td style={{ padding: "8px 6px", fontWeight: 600, color: ev > 0.5 ? "#f59e0b" : "#94a3b8" }}>
-                          {ev > 0 ? `+${(ev * 100).toFixed(0)}%` : "—"}
+                          {ev > 0 ? `+${(ev * 100).toFixed(0)}%` : "n/a"}
                         </td>
                         <td style={{ padding: "8px 6px" }}>
-                          {e.signal ? (
-                            <span style={{ fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 4, background: getSignalColor(e.signal), color: "#fff" }}>{e.signal}</span>
-                          ) : <span style={{ color: "#334155" }}>—</span>}
+                          <div className="table-status-cell">
+                            <span
+                              className="table-status-pill"
+                              style={{ background: rec.background, borderColor: rec.border, color: rec.text }}
+                            >
+                              {rec.label}
+                            </span>
+                            <span className="table-status-detail">{rec.detail}</span>
+                          </div>
                         </td>
-                        <td style={{ padding: "8px 6px", color: bp != null ? "#e2e8f0" : "#334155", fontWeight: 600 }}>
-                          {bp != null ? `${Math.round(bp * 100)}¢` : "—"}
+                        <td style={{ padding: "8px 6px", color: bp != null ? "#e2e8f0" : "#94a3b8", fontWeight: 600 }}>
+                          {getPriceLabel(e)}
                         </td>
                         <td style={{ padding: "8px 6px", color: "#64748b" }}>{(e.volume || 0).toLocaleString()}</td>
                         <td style={{ padding: "8px 6px", color: "#64748b", fontSize: 11 }}>{timeUntil(e.close_time)}</td>

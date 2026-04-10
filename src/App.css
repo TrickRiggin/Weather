@@ -235,7 +235,19 @@
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.03);
   color: var(--text);
+  color-scheme: dark;
   font: inherit;
+}
+
+.control-select:focus {
+  outline: none;
+  border-color: rgba(125, 211, 252, 0.35);
+  box-shadow: 0 0 0 3px rgba(125, 211, 252, 0.12);
+}
+
+.control-select option {
+  background: #0b1929;
+  color: var(--text);
 }
 
 .control-summary {
@@ -479,6 +491,51 @@
 .table-shell {
   padding: 18px;
   border-radius: 24px;
+}
+
+.scanner-note {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(246, 183, 86, 0.2);
+  background: rgba(246, 183, 86, 0.08);
+  color: var(--muted-strong);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.scanner-note strong {
+  color: var(--text);
+}
+
+.table-status-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.table-status-pill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 2px 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.table-status-detail {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .city-chip-grid {
