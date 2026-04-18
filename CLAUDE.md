@@ -48,7 +48,14 @@ mean = ensemble_mean - bias  # correct systematic forecast bias
 std = max(sigma * 1.3, 1.5)  # inflate for operational conditions, floor at 1.5F
 P(above T) = 1 - normCDF((T - mean) / std)
 edge = our_probability - kalshi_midpoint
-signal = YES/NO when 12% <= |edge| <= 20%  (kill switch: >20% disagreement = model failure)
+
+# Signal gating (type-specific after 2026-04-18 backtest):
+#   lows:  signal when 12% <= |edge| <= 20%
+#   highs: signal when 18% <= |edge| <= 20%   (lower floor removed, backtest lost -$3.21 in 0.12-0.18 band)
+# Kill switch (both): |edge| > 20% = model failure, not alpha
+# HIGH YES signals are ALWAYS suppressed — 2/39 = 5% WR historical (residual cold-bias symptom)
+# Blocklist: (CHI, high), (DEN, high), (DEN, low) — calibration bias wrong-direction or under-correcting
+
 EV capped at 300% (if higher, model is probably wrong, not market)
 Near-settled filter: skip contracts with mid <= 8% or mid >= 92%
 ```

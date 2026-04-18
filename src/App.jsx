@@ -23,7 +23,11 @@ const MODEL_COLORS = {
 };
 
 const EDGE_THRESHOLD = META?.edge_threshold ?? 0.12;
+const HIGH_EDGE_THRESHOLD = META?.high_edge_threshold ?? EDGE_THRESHOLD;
 const MAX_DISAGREEMENT = META?.max_disagreement ?? 0.2;
+const SIGNAL_BLOCKLIST = new Set((META?.signal_blocklist ?? []).map(([c, t]) => `${c}|${t}`));
+const SUPPRESS_HIGH_YES = META?.suppress_high_yes ?? false;
+const edgeFloorFor = (type) => (type === "high" ? HIGH_EDGE_THRESHOLD : EDGE_THRESHOLD);
 
 // ========== HELPERS ==========
 const pct = (v, digits = 0) => v != null ? `${(v * 100).toFixed(digits)}%` : "—";
@@ -99,6 +103,7 @@ const getRecommendationState = (edge) => {
   }
 
   const absEdge = Math.abs(edge?.edge || 0);
+  const floor = edgeFloorFor(edge?.type);
 
   if (edge?.strike_type === "between") {
     return {
@@ -120,10 +125,30 @@ const getRecommendationState = (edge) => {
     };
   }
 
-  if (absEdge < EDGE_THRESHOLD) {
+  if (SIGNAL_BLOCKLIST.has(`${edge?.city}|${edge?.type}`)) {
+    return {
+      label: "BLOCKED",
+      detail: "City calibration off",
+      background: "rgba(148, 163, 184, 0.14)",
+      border: "rgba(148, 163, 184, 0.28)",
+      text: "#cbd5e1",
+    };
+  }
+
+  if (SUPPRESS_HIGH_YES && edge?.type === "high" && edge?.edge > 0 && absEdge >= floor) {
+    return {
+      label: "PASS",
+      detail: "High-YES suppressed",
+      background: "rgba(100, 116, 139, 0.14)",
+      border: "rgba(100, 116, 139, 0.24)",
+      text: "#94a3b8",
+    };
+  }
+
+  if (absEdge < floor) {
     return {
       label: "NO BET",
-      detail: "Below floor",
+      detail: edge?.type === "high" ? "Below high floor" : "Below floor",
       background: "rgba(100, 116, 139, 0.14)",
       border: "rgba(100, 116, 139, 0.24)",
       text: "#94a3b8",
@@ -198,8 +223,10 @@ function App() {
   }, [activeDate, filterCity, filterType, sortBy]);
 
   const boardStatus = useMemo(() => ({
-    rangeOnly: allEdges.filter((edge) => !edge.signal && edge.strike_type === "between" && Math.abs(edge.edge || 0) >= EDGE_THRESHOLD).length,
+    rangeOnly: allEdges.filter((edge) => !edge.signal && edge.strike_type === "between" && Math.abs(edge.edge || 0) >= edgeFloorFor(edge.type)).length,
     killed: allEdges.filter((edge) => !edge.signal && edge.strike_type !== "between" && Math.abs(edge.edge || 0) > MAX_DISAGREEMENT).length,
+    blocked: allEdges.filter((edge) => !edge.signal && SIGNAL_BLOCKLIST.has(`${edge.city}|${edge.type}`) && Math.abs(edge.edge || 0) >= edgeFloorFor(edge.type)).length,
+    highYes: allEdges.filter((edge) => !edge.signal && SUPPRESS_HIGH_YES && edge.type === "high" && edge.edge > 0 && Math.abs(edge.edge) >= edgeFloorFor(edge.type) && Math.abs(edge.edge) <= MAX_DISAGREEMENT && edge.strike_type !== "between" && !SIGNAL_BLOCKLIST.has(`${edge.city}|${edge.type}`)).length,
   }), [allEdges]);
 
   const cityList = Object.keys(CITY_NAMES);
@@ -439,6 +466,12 @@ function App() {
                     : ""}
                   {boardStatus.killed > 0
                     ? ` ${boardStatus.killed} more were blocked by the ${Math.round(MAX_DISAGREEMENT * 100)}% disagreement kill switch.`
+                    : ""}
+                  {boardStatus.highYes > 0
+                    ? ` ${boardStatus.highYes} high-YES edges were suppressed (the model's weakest signal type in backtesting).`
+                    : ""}
+                  {boardStatus.blocked > 0
+                    ? ` ${boardStatus.blocked} were blocked because that city/type has unreliable calibration right now.`
                     : ""}
                 </span>
               </div>

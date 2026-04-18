@@ -64,8 +64,23 @@ def _load_calibration():
 CITY_SIGMA = _load_calibration()
 
 # Edge threshold for signals
-EDGE_THRESHOLD = 0.12  # 12% edge minimum — raised from 5% (too loose, was finding noise)
-MAX_DISAGREEMENT = 0.20  # Kill switch: if |model - market| > 20%, it's a model failure, not alpha
+EDGE_THRESHOLD = 0.12         # Floor for lows
+HIGH_EDGE_THRESHOLD = 0.18    # Higher floor for highs — backtest 2026-04-18: |edge| 0.12-0.18 lost -$3.21 across highs
+MAX_DISAGREEMENT = 0.20       # Kill switch: if |model - market| > 20%, it's a model failure, not alpha
+
+# Blocklist — (city, type) combos where calibration bias points the wrong way or
+# under-corrects by >2F against current weather patterns (April 2026 backtest).
+# Suppressing here until calibration is rebuilt with an operational-data blend.
+SIGNAL_BLOCKLIST = frozenset([
+    ("CHI", "high"),   # historical bias -2.4F captures only 35% of true -6.9F bias
+    ("DEN", "high"),   # cal says cold-biased (-0.8F), reality is warm-biased (+1.8F)
+    ("DEN", "low"),    # cal says warm-biased (+0.8F), reality is warmer still (+3.3F)
+])
+
+# Suppress HIGH YES signals entirely — backtest: 2/39 = 5% WR, -$3.65 P&L.
+# Symptom of residual cold-bias: if our model STILL predicts a high-temp edge
+# after bias correction, the correction is insufficient and we're wrong.
+SUPPRESS_HIGH_YES = True
 
 # ============================================================
 #  HELPERS
@@ -590,12 +605,18 @@ def calculate_edges(ensembles, markets, pace_data=None):
                 # "Between" contracts are narrow 2-degree buckets — our model structurally
                 # can't price them (max ~20% for any bucket, even when models cluster there).
                 # Still calculate edge for display, but don't generate actionable signals.
-                if strike_type != "between" and abs(edge) >= EDGE_THRESHOLD:
+                min_edge = HIGH_EDGE_THRESHOLD if mtype == "high" else EDGE_THRESHOLD
+                if (city_code, mtype) in SIGNAL_BLOCKLIST:
+                    signal = None
+                elif strike_type != "between" and abs(edge) >= min_edge:
                     # Kill switch: huge disagreements with market are model failures
                     if abs(edge) > MAX_DISAGREEMENT:
                         signal = None
                     else:
                         signal = "YES" if edge > 0 else "NO"
+                        # HIGH YES is a confirmed money-loser (5% WR historical) — suppress
+                        if SUPPRESS_HIGH_YES and mtype == "high" and signal == "YES":
+                            signal = None
                 else:
                     signal = None
 
@@ -641,8 +662,23 @@ def calculate_edges(ensembles, markets, pace_data=None):
     # Summary
     signals = [e for e in edges if e["signal"]]
     print(f"  Total contracts analyzed: {len(edges)}")
-    killed = len([e for e in edges if e["strike_type"] != "between" and abs(e["edge"]) >= EDGE_THRESHOLD and abs(e["edge"]) > MAX_DISAGREEMENT])
-    print(f"  Signals ({EDGE_THRESHOLD*100:.0f}-{MAX_DISAGREEMENT*100:.0f}% edge): {len(signals)}  (killed {killed} over {MAX_DISAGREEMENT*100:.0f}% disagreement)")
+    killed = len([e for e in edges
+                  if e["strike_type"] != "between"
+                  and (HIGH_EDGE_THRESHOLD if e["type"] == "high" else EDGE_THRESHOLD) <= abs(e["edge"])
+                  and abs(e["edge"]) > MAX_DISAGREEMENT])
+    blocked = len([e for e in edges if (e["city"], e["type"]) in SIGNAL_BLOCKLIST])
+    suppressed_high_yes = len([e for e in edges
+                               if SUPPRESS_HIGH_YES
+                               and e["type"] == "high"
+                               and e["signal"] is None
+                               and e["edge"] > 0
+                               and abs(e["edge"]) >= HIGH_EDGE_THRESHOLD
+                               and abs(e["edge"]) <= MAX_DISAGREEMENT
+                               and e["strike_type"] != "between"
+                               and (e["city"], e["type"]) not in SIGNAL_BLOCKLIST])
+    print(f"  Signals: {len(signals)}  "
+          f"(low floor {EDGE_THRESHOLD*100:.0f}%, high floor {HIGH_EDGE_THRESHOLD*100:.0f}%, kill {MAX_DISAGREEMENT*100:.0f}%)")
+    print(f"    killed {killed} over-disagreement, blocked {blocked} city/type, suppressed {suppressed_high_yes} high-YES")
     if signals:
         top = signals[0]
         print(f"  Best edge: {top['city_name']} {top['type']} {top['threshold']}F "
@@ -1583,7 +1619,10 @@ def write_data_files(forecasts, ensembles, markets, edges, observations, pace_da
         "total_contracts": len(flat_markets),
         "total_edges": len([e for e in edges if e["signal"]]),
         "edge_threshold": EDGE_THRESHOLD,
+        "high_edge_threshold": HIGH_EDGE_THRESHOLD,
         "max_disagreement": MAX_DISAGREEMENT,
+        "signal_blocklist": [list(x) for x in SIGNAL_BLOCKLIST],
+        "suppress_high_yes": SUPPRESS_HIGH_YES,
     }
     _write_js(src_dir / "meta.js", "META", meta)
     print(f"  Wrote meta to src/meta.js")
