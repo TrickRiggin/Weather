@@ -295,7 +295,7 @@ function App() {
                     <div className="section-title">Top signals</div>
                   </div>
                   <div className="section-copy">
-                    Highest-conviction prices first. Same-day highs can include pace-adjusted temperature drift from live observations.
+                    Highest-conviction prices first. Edges use the ensemble forecast only; pace drift is shown as a live indicator but not fed into probabilities.
                   </div>
                 </div>
                 <div className="signals-grid">
@@ -304,8 +304,8 @@ function App() {
                     const fcst = getForecastData(e);
                     const isToday = e.date === todayDate;
                     const hasPace = isToday && e.type === "high" && obs.adjusted_high != null;
-                    const forecastVal = hasPace ? obs.adjusted_high : fcst.mean;
-                    const forecastLabel = hasPace ? "PACE ADJ" : "FORECAST";
+                    const forecastVal = fcst.mean;
+                    const forecastLabel = "FORECAST";
 
                     const buyPrice = getBuyPrice(e);
                     const winProb = getWinProb(e);

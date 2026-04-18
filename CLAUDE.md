@@ -37,15 +37,11 @@ Weather market prediction platform. React 19 + Vite frontend, Python data pipeli
 ### 10 Cities (High-Volume Kalshi Markets)
 NYC, LAX, CHI, MIA, DAL, DEN, PHI, ATL, HOU, PHX
 
-### Edge Calculation (Pace-Aware, Horizon-Weighted)
+### Edge Calculation (Horizon-Weighted Ensemble, Calibrated)
 ```
-# Day 0 highs with pace data:
-mean = HRRR_forecast_high + pace_delta  # pace-adjusted reality
-# Day 0 lows / Day 1:
-mean = weighted_avg(HRRR*2, NBM*1, ECMWF*0.5)  # day 0 weights
-mean = weighted_avg(HRRR*1, NBM*1.2, ECMWF*0.8)  # day 1 weights
-# Day 2+:
-mean = weighted_avg(NBM*1.2, ECMWF*1.0)  # HRRR nulls out
+# Day 0: mean = weighted_avg(HRRR*2, NBM*1, ECMWF*0.5)
+# Day 1: mean = weighted_avg(HRRR*1, NBM*1.2, ECMWF*0.8)
+# Day 2+: mean = weighted_avg(NBM*1.2, ECMWF*1.0)  # HRRR nulls out
 
 sigma, bias = get_calibration(city, type, date)  # city/type/month-specific from calibrate.py
 mean = ensemble_mean - bias  # correct systematic forecast bias
@@ -57,18 +53,22 @@ EV capped at 300% (if higher, model is probably wrong, not market)
 Near-settled filter: skip contracts with mid <= 8% or mid >= 92%
 ```
 
-### Pace Tracking (Intraday)
+### Pace Tracking (Intraday — Display Only)
 - HRRR gives hourly temperature curve in city's LOCAL timezone
 - NWS gives current observed temperature
 - pace_delta = observed - HRRR_expected_at_this_hour
 - adjusted_high = HRRR_forecast_high + pace_delta
-- **Pace now feeds into edge probability** for day 0 highs (not just display)
+- **Pace is surfaced in the UI as a live indicator but NOT used in edge math.**
+  Backtest (2026-04-18) showed pace-adjusted mean had 3.3x worse MAE than raw ensemble
+  on day 0 highs (2.17F vs 0.66F) and went 0/7 on signals — an early-morning temperature
+  anomaly frequently doesn't carry through to the daily high, so pace systematically
+  flipped the mean across thresholds and generated confident wrong bets.
 - Uses `zoneinfo.ZoneInfo` for timezone conversion (Python 3.9+)
 
 ## Refresh Schedule
 - **Every 20-30 min** — cron-job.org -> `repository_dispatch` (type: `light-refresh`)
 - Single workflow handles everything (no heavy/light split — pipeline runs in ~45s)
-- Full pipeline: OpenMeteo forecasts -> ensemble -> NWS obs -> pace -> Kalshi markets -> edges (pace-aware) -> record signals -> resolve past signals -> write src/
+- Full pipeline: OpenMeteo forecasts -> ensemble -> NWS obs -> pace (display only) -> Kalshi markets -> edges (ensemble+calibration) -> record signals -> resolve past signals -> write src/
 
 ## UI
 - Dark theme (#0f172a backgrounds, blue/cyan #3b82f6/#06b6d4 gradient accents)

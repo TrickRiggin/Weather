@@ -473,8 +473,9 @@ def _parse_price(val):
 def calculate_edges(ensembles, markets, pace_data=None):
     """
     Compare ensemble probabilities against Kalshi market prices.
-    Uses pace-adjusted forecasts for same-day highs and horizon-based
-    model weighting (HRRR dominant day 0, NBM/ECMWF for day 2+).
+    Uses horizon-based model weighting (HRRR dominant day 0, NBM/ECMWF for day 2+).
+    Pace data is computed upstream and surfaced in the UI, but NOT fed into edge math —
+    backtest showed it was 3.3x less accurate than the ensemble on day 0 highs.
     Returns: [{city, date, type, contract_ticker, threshold, our_prob, market_prob, edge, signal}]
     """
     print("\n=== CALCULATING EDGES ===\n")
@@ -515,12 +516,12 @@ def calculate_edges(ensembles, markets, pace_data=None):
             model_temps = ensemble.get(f"{mtype}_models", {})
             raw_std = ensemble["high_std"] if mtype == "high" else ensemble.get("low_std")
 
-            # Pick the best mean based on what data we have:
-            # Day 0 high + pace data → pace-adjusted HRRR (observed reality)
-            # Otherwise → horizon-weighted model mean
-            if horizon == 0 and mtype == "high" and pace.get("adjusted_high") is not None:
-                mean = pace["adjusted_high"]
-            elif model_temps:
+            # Horizon-weighted ensemble mean.
+            # Pace adjustment was removed: backtest (2026-04-18) showed pace-adjusted
+            # mean had 3.3x worse MAE than raw ensemble (2.17F vs 0.66F) on day 0 highs,
+            # and went 0/7 on signals because it flipped the mean across thresholds.
+            # Pace is still computed and surfaced in the UI as an intraday indicator.
+            if model_temps:
                 mean = horizon_weighted_mean(model_temps, horizon)
             else:
                 mean = ensemble["high_mean"] if mtype == "high" else ensemble.get("low_mean")
@@ -631,7 +632,7 @@ def calculate_edges(ensembles, markets, pace_data=None):
                     "close_time": contract["close_time"],
                     "calibration_sigma": round(std, 4),
                     "calibration_bias": round(cal_bias, 4),
-                    "pace_used": horizon == 0 and mtype == "high" and pace.get("adjusted_high") is not None,
+                    "pace_used": False,
                 })
 
     # Sort by absolute edge descending
@@ -1722,7 +1723,7 @@ def main():
     # 4. Fetch Kalshi markets
     markets = fetch_kalshi_markets()
 
-    # 5. Calculate edges (pace-aware — uses HRRR pace adjustment for day 0 highs)
+    # 5. Calculate edges (ensemble + calibration — pace is display-only, not in math)
     edges = calculate_edges(ensembles, markets, pace_data=pace_data)
 
     # 6. Record every priced contract + actionable signals and resolve past ones
