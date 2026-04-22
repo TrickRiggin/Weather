@@ -1,562 +1,570 @@
 export const FORECASTS = {
   "NYC": {
     "2026-04-22": {
-      "high_mean": 55.1,
-      "high_std": 3.78,
-      "high_min": 52.8,
-      "high_max": 59.5,
+      "high_mean": 55.4,
+      "high_std": 3.0,
+      "high_min": 53.4,
+      "high_max": 58.5,
       "high_models": {
-        "ncep_hrrr_conus": 52.8,
-        "ncep_nbm_conus": 53.1,
-        "ecmwf_ifs025": 59.5
+        "ncep_hrrr_conus": 54.2,
+        "ncep_nbm_conus": 53.4,
+        "ecmwf_ifs025": 58.5
       },
-      "low_mean": 45.8,
+      "low_mean": 45.7,
       "low_std": 3.0,
       "low_models": {
-        "ncep_hrrr_conus": 45.1,
-        "ncep_nbm_conus": 47.7,
-        "ecmwf_ifs025": 44.5
+        "ncep_hrrr_conus": 44.7,
+        "ncep_nbm_conus": 47.8,
+        "ecmwf_ifs025": 44.7
       },
       "model_count": 3
     },
     "2026-04-23": {
-      "high_mean": 68.1,
-      "high_std": 3.0,
-      "high_min": 66.2,
-      "high_max": 70.0,
+      "high_mean": 71.5,
+      "high_std": 3.82,
+      "high_min": 67.9,
+      "high_max": 75.5,
       "high_models": {
-        "ncep_nbm_conus": 66.2,
-        "ecmwf_ifs025": 70.0
+        "ncep_hrrr_conus": 75.5,
+        "ncep_nbm_conus": 67.9,
+        "ecmwf_ifs025": 71.1
       },
-      "low_mean": 46.6,
-      "low_std": 3.32,
+      "low_mean": 45.2,
+      "low_std": 3.71,
       "low_models": {
-        "ncep_nbm_conus": 49.0,
-        "ecmwf_ifs025": 44.3
+        "ncep_hrrr_conus": 42.5,
+        "ncep_nbm_conus": 49.4,
+        "ecmwf_ifs025": 43.6
       },
-      "model_count": 2
+      "model_count": 3
     },
     "2026-04-24": {
-      "high_mean": 58.8,
-      "high_std": 3.0,
-      "high_min": 58.2,
-      "high_max": 59.3,
+      "high_mean": 63.9,
+      "high_std": 5.02,
+      "high_min": 60.3,
+      "high_max": 67.4,
       "high_models": {
-        "ncep_nbm_conus": 59.3,
-        "ecmwf_ifs025": 58.2
+        "ncep_nbm_conus": 60.3,
+        "ecmwf_ifs025": 67.4
       },
-      "low_mean": 50.3,
-      "low_std": 4.31,
+      "low_mean": 51.8,
+      "low_std": 3.46,
       "low_models": {
-        "ncep_nbm_conus": 53.4,
-        "ecmwf_ifs025": 47.3
+        "ncep_nbm_conus": 54.2,
+        "ecmwf_ifs025": 49.3
       },
       "model_count": 2
     }
   },
   "LAX": {
-    "2026-04-21": {
-      "high_mean": 67.3,
-      "high_std": 3.0,
-      "high_min": 66.0,
-      "high_max": 68.1,
-      "high_models": {
-        "ncep_hrrr_conus": 67.9,
-        "ncep_nbm_conus": 66.0,
-        "ecmwf_ifs025": 68.1
-      },
-      "low_mean": 54.6,
-      "low_std": 3.0,
-      "low_models": {
-        "ncep_hrrr_conus": 53.3,
-        "ncep_nbm_conus": 55.2,
-        "ecmwf_ifs025": 55.2
-      },
-      "model_count": 3
-    },
     "2026-04-22": {
       "high_mean": 66.7,
       "high_std": 3.0,
-      "high_min": 65.0,
-      "high_max": 69.8,
+      "high_min": 64.7,
+      "high_max": 70.1,
       "high_models": {
-        "ncep_hrrr_conus": 65.3,
-        "ncep_nbm_conus": 65.0,
-        "ecmwf_ifs025": 69.8
+        "ncep_hrrr_conus": 65.4,
+        "ncep_nbm_conus": 64.7,
+        "ecmwf_ifs025": 70.1
       },
-      "low_mean": 52.7,
+      "low_mean": 53.1,
       "low_std": 3.0,
       "low_models": {
-        "ncep_hrrr_conus": 50.3,
-        "ncep_nbm_conus": 54.5,
-        "ecmwf_ifs025": 53.3
+        "ncep_hrrr_conus": 51.5,
+        "ncep_nbm_conus": 53.9,
+        "ecmwf_ifs025": 54.0
       },
       "model_count": 3
     },
     "2026-04-23": {
-      "high_mean": 73.5,
-      "high_std": 7.21,
-      "high_min": 68.4,
-      "high_max": 78.6,
+      "high_mean": 72.1,
+      "high_std": 5.24,
+      "high_min": 67.7,
+      "high_max": 77.9,
       "high_models": {
-        "ncep_nbm_conus": 68.4,
-        "ecmwf_ifs025": 78.6
+        "ncep_hrrr_conus": 70.7,
+        "ncep_nbm_conus": 67.7,
+        "ecmwf_ifs025": 77.9
       },
-      "low_mean": 54.4,
+      "low_mean": 53.3,
       "low_std": 3.0,
       "low_models": {
-        "ncep_nbm_conus": 55.0,
-        "ecmwf_ifs025": 53.7
+        "ncep_hrrr_conus": 50.8,
+        "ncep_nbm_conus": 54.9,
+        "ecmwf_ifs025": 54.3
+      },
+      "model_count": 3
+    },
+    "2026-04-24": {
+      "high_mean": 73.2,
+      "high_std": 6.43,
+      "high_min": 68.7,
+      "high_max": 77.8,
+      "high_models": {
+        "ncep_nbm_conus": 68.7,
+        "ecmwf_ifs025": 77.8
+      },
+      "low_mean": 57.1,
+      "low_std": 3.0,
+      "low_models": {
+        "ncep_nbm_conus": 57.1,
+        "ecmwf_ifs025": 57.1
       },
       "model_count": 2
     }
   },
   "CHI": {
-    "2026-04-21": {
-      "high_mean": 71.9,
-      "high_std": 3.0,
-      "high_min": 70.2,
-      "high_max": 73.7,
-      "high_models": {
-        "ncep_hrrr_conus": 73.7,
-        "ncep_nbm_conus": 71.7,
-        "ecmwf_ifs025": 70.2
-      },
-      "low_mean": 45.8,
-      "low_std": 3.0,
-      "low_models": {
-        "ncep_hrrr_conus": 43.0,
-        "ncep_nbm_conus": 47.6,
-        "ecmwf_ifs025": 46.9
-      },
-      "model_count": 3
-    },
     "2026-04-22": {
-      "high_mean": 61.1,
-      "high_std": 3.16,
-      "high_min": 58.8,
-      "high_max": 64.7,
+      "high_mean": 61.9,
+      "high_std": 3.0,
+      "high_min": 60.2,
+      "high_max": 63.5,
       "high_models": {
-        "ncep_hrrr_conus": 64.7,
-        "ncep_nbm_conus": 59.8,
-        "ecmwf_ifs025": 58.8
+        "ncep_hrrr_conus": 61.9,
+        "ncep_nbm_conus": 60.2,
+        "ecmwf_ifs025": 63.5
       },
-      "low_mean": 47.4,
+      "low_mean": 47.5,
       "low_std": 3.0,
       "low_models": {
-        "ncep_hrrr_conus": 45.0,
-        "ncep_nbm_conus": 50.7,
+        "ncep_hrrr_conus": 46.6,
+        "ncep_nbm_conus": 49.2,
         "ecmwf_ifs025": 46.6
       },
       "model_count": 3
     },
     "2026-04-23": {
-      "high_mean": 74.6,
-      "high_std": 3.04,
-      "high_min": 72.4,
-      "high_max": 76.7,
+      "high_mean": 77.2,
+      "high_std": 4.88,
+      "high_min": 73.4,
+      "high_max": 82.7,
       "high_models": {
-        "ncep_nbm_conus": 72.4,
-        "ecmwf_ifs025": 76.7
+        "ncep_hrrr_conus": 82.7,
+        "ncep_nbm_conus": 73.4,
+        "ecmwf_ifs025": 75.5
       },
-      "low_mean": 50.4,
+      "low_mean": 47.5,
       "low_std": 3.0,
       "low_models": {
-        "ncep_nbm_conus": 51.2,
-        "ecmwf_ifs025": 49.5
+        "ncep_hrrr_conus": 46.0,
+        "ncep_nbm_conus": 49.0,
+        "ecmwf_ifs025": 47.6
+      },
+      "model_count": 3
+    },
+    "2026-04-24": {
+      "high_mean": 68.0,
+      "high_std": 3.0,
+      "high_min": 66.0,
+      "high_max": 69.9,
+      "high_models": {
+        "ncep_nbm_conus": 66.0,
+        "ecmwf_ifs025": 69.9
+      },
+      "low_mean": 57.8,
+      "low_std": 3.0,
+      "low_models": {
+        "ncep_nbm_conus": 57.8,
+        "ecmwf_ifs025": 57.8
       },
       "model_count": 2
     }
   },
   "MIA": {
     "2026-04-22": {
-      "high_mean": 76.9,
+      "high_mean": 77.6,
       "high_std": 3.0,
-      "high_min": 76.0,
-      "high_max": 77.9,
+      "high_min": 76.9,
+      "high_max": 78.6,
       "high_models": {
-        "ncep_hrrr_conus": 77.9,
+        "ncep_hrrr_conus": 77.2,
         "ncep_nbm_conus": 76.9,
-        "ecmwf_ifs025": 76.0
+        "ecmwf_ifs025": 78.6
       },
-      "low_mean": 70.1,
+      "low_mean": 70.4,
       "low_std": 3.0,
       "low_models": {
-        "ncep_hrrr_conus": 69.4,
-        "ncep_nbm_conus": 70.5,
-        "ecmwf_ifs025": 70.5
+        "ncep_hrrr_conus": 69.6,
+        "ncep_nbm_conus": 70.7,
+        "ecmwf_ifs025": 71.0
       },
       "model_count": 3
     },
     "2026-04-23": {
-      "high_mean": 77.3,
+      "high_mean": 77.8,
       "high_std": 3.0,
-      "high_min": 77.3,
-      "high_max": 77.3,
+      "high_min": 76.5,
+      "high_max": 79.7,
       "high_models": {
-        "ncep_nbm_conus": 77.3,
-        "ecmwf_ifs025": 77.3
+        "ncep_hrrr_conus": 79.7,
+        "ncep_nbm_conus": 77.1,
+        "ecmwf_ifs025": 76.5
       },
-      "low_mean": 70.8,
+      "low_mean": 69.9,
       "low_std": 3.0,
       "low_models": {
-        "ncep_nbm_conus": 71.1,
-        "ecmwf_ifs025": 70.4
+        "ncep_hrrr_conus": 67.8,
+        "ncep_nbm_conus": 70.8,
+        "ecmwf_ifs025": 71.0
       },
-      "model_count": 2
+      "model_count": 3
     },
     "2026-04-24": {
-      "high_mean": 80.2,
+      "high_mean": 80.0,
       "high_std": 3.0,
-      "high_min": 78.5,
-      "high_max": 81.8,
+      "high_min": 79.0,
+      "high_max": 81.0,
       "high_models": {
-        "ncep_nbm_conus": 78.5,
-        "ecmwf_ifs025": 81.8
+        "ncep_nbm_conus": 79.0,
+        "ecmwf_ifs025": 81.0
       },
-      "low_mean": 71.6,
+      "low_mean": 71.4,
       "low_std": 3.0,
       "low_models": {
-        "ncep_nbm_conus": 70.9,
-        "ecmwf_ifs025": 72.3
+        "ncep_nbm_conus": 71.0,
+        "ecmwf_ifs025": 71.8
       },
       "model_count": 2
     }
   },
   "DAL": {
-    "2026-04-21": {
-      "high_mean": 63.2,
-      "high_std": 3.0,
-      "high_min": 61.7,
-      "high_max": 65.3,
-      "high_models": {
-        "ncep_hrrr_conus": 61.7,
-        "ncep_nbm_conus": 62.6,
-        "ecmwf_ifs025": 65.3
-      },
-      "low_mean": 56.5,
-      "low_std": 3.0,
-      "low_models": {
-        "ncep_hrrr_conus": 55.8,
-        "ncep_nbm_conus": 57.0,
-        "ecmwf_ifs025": 56.6
-      },
-      "model_count": 3
-    },
     "2026-04-22": {
-      "high_mean": 74.7,
+      "high_mean": 74.4,
       "high_std": 3.0,
-      "high_min": 73.4,
-      "high_max": 75.9,
+      "high_min": 72.8,
+      "high_max": 75.3,
       "high_models": {
-        "ncep_hrrr_conus": 73.4,
-        "ncep_nbm_conus": 75.9,
-        "ecmwf_ifs025": 74.9
+        "ncep_hrrr_conus": 72.8,
+        "ncep_nbm_conus": 75.3,
+        "ecmwf_ifs025": 75.0
       },
-      "low_mean": 60.4,
+      "low_mean": 60.3,
       "low_std": 3.0,
       "low_models": {
-        "ncep_hrrr_conus": 60.4,
+        "ncep_hrrr_conus": 60.3,
         "ncep_nbm_conus": 60.6,
-        "ecmwf_ifs025": 60.1
+        "ecmwf_ifs025": 59.9
       },
       "model_count": 3
     },
     "2026-04-23": {
-      "high_mean": 79.1,
+      "high_mean": 78.4,
       "high_std": 3.0,
-      "high_min": 79.0,
-      "high_max": 79.2,
+      "high_min": 76.0,
+      "high_max": 80.6,
       "high_models": {
-        "ncep_nbm_conus": 79.2,
-        "ecmwf_ifs025": 79.0
+        "ncep_hrrr_conus": 76.0,
+        "ncep_nbm_conus": 80.6,
+        "ecmwf_ifs025": 78.5
       },
-      "low_mean": 66.8,
+      "low_mean": 66.2,
       "low_std": 3.0,
       "low_models": {
-        "ncep_nbm_conus": 67.2,
-        "ecmwf_ifs025": 66.3
+        "ncep_hrrr_conus": 66.6,
+        "ncep_nbm_conus": 67.1,
+        "ecmwf_ifs025": 65.0
+      },
+      "model_count": 3
+    },
+    "2026-04-24": {
+      "high_mean": 86.0,
+      "high_std": 3.0,
+      "high_min": 85.6,
+      "high_max": 86.5,
+      "high_models": {
+        "ncep_nbm_conus": 86.5,
+        "ecmwf_ifs025": 85.6
+      },
+      "low_mean": 69.5,
+      "low_std": 3.0,
+      "low_models": {
+        "ncep_nbm_conus": 69.3,
+        "ecmwf_ifs025": 69.7
       },
       "model_count": 2
     }
   },
   "DEN": {
-    "2026-04-21": {
-      "high_mean": 82.6,
-      "high_std": 3.0,
-      "high_min": 81.9,
-      "high_max": 83.4,
-      "high_models": {
-        "ncep_hrrr_conus": 82.5,
-        "ncep_nbm_conus": 81.9,
-        "ecmwf_ifs025": 83.4
-      },
-      "low_mean": 48.5,
-      "low_std": 3.0,
-      "low_models": {
-        "ncep_hrrr_conus": 47.4,
-        "ncep_nbm_conus": 50.2,
-        "ecmwf_ifs025": 47.9
-      },
-      "model_count": 3
-    },
     "2026-04-22": {
-      "high_mean": 81.7,
+      "high_mean": 81.3,
       "high_std": 3.0,
-      "high_min": 80.6,
-      "high_max": 82.5,
+      "high_min": 80.3,
+      "high_max": 82.0,
       "high_models": {
-        "ncep_hrrr_conus": 82.5,
-        "ncep_nbm_conus": 80.6,
-        "ecmwf_ifs025": 81.9
+        "ncep_hrrr_conus": 82.0,
+        "ncep_nbm_conus": 80.3,
+        "ecmwf_ifs025": 81.7
       },
-      "low_mean": 57.5,
+      "low_mean": 57.7,
       "low_std": 3.0,
       "low_models": {
-        "ncep_hrrr_conus": 56.7,
-        "ncep_nbm_conus": 56.5,
-        "ecmwf_ifs025": 59.2
+        "ncep_hrrr_conus": 57.7,
+        "ncep_nbm_conus": 58.3,
+        "ecmwf_ifs025": 57.0
       },
       "model_count": 3
     },
     "2026-04-23": {
-      "high_mean": 63.7,
+      "high_mean": 64.3,
       "high_std": 3.0,
-      "high_min": 63.1,
-      "high_max": 64.3,
+      "high_min": 63.2,
+      "high_max": 65.6,
       "high_models": {
-        "ncep_nbm_conus": 63.1,
-        "ecmwf_ifs025": 64.3
+        "ncep_hrrr_conus": 64.1,
+        "ncep_nbm_conus": 63.2,
+        "ecmwf_ifs025": 65.6
       },
-      "low_mean": 46.0,
+      "low_mean": 46.2,
       "low_std": 3.0,
       "low_models": {
-        "ncep_nbm_conus": 46.7,
-        "ecmwf_ifs025": 45.4
+        "ncep_hrrr_conus": 44.8,
+        "ncep_nbm_conus": 47.0,
+        "ecmwf_ifs025": 46.7
+      },
+      "model_count": 3
+    },
+    "2026-04-24": {
+      "high_mean": 68.7,
+      "high_std": 3.0,
+      "high_min": 67.3,
+      "high_max": 70.1,
+      "high_models": {
+        "ncep_nbm_conus": 67.3,
+        "ecmwf_ifs025": 70.1
+      },
+      "low_mean": 41.7,
+      "low_std": 3.0,
+      "low_models": {
+        "ncep_nbm_conus": 39.7,
+        "ecmwf_ifs025": 43.6
       },
       "model_count": 2
     }
   },
   "PHI": {
     "2026-04-22": {
-      "high_mean": 64.5,
+      "high_mean": 68.1,
       "high_std": 3.0,
-      "high_min": 64.2,
-      "high_max": 65.1,
+      "high_min": 67.7,
+      "high_max": 68.6,
       "high_models": {
-        "ncep_hrrr_conus": 64.2,
-        "ncep_nbm_conus": 65.1,
-        "ecmwf_ifs025": 64.3
+        "ncep_hrrr_conus": 67.7,
+        "ncep_nbm_conus": 68.6,
+        "ecmwf_ifs025": 68.0
       },
-      "low_mean": 45.5,
+      "low_mean": 46.7,
       "low_std": 3.0,
       "low_models": {
-        "ncep_hrrr_conus": 44.4,
-        "ncep_nbm_conus": 47.4,
-        "ecmwf_ifs025": 44.7
+        "ncep_hrrr_conus": 46.9,
+        "ncep_nbm_conus": 47.1,
+        "ecmwf_ifs025": 46.0
       },
       "model_count": 3
     },
     "2026-04-23": {
-      "high_mean": 74.7,
+      "high_mean": 77.3,
       "high_std": 3.0,
-      "high_min": 74.1,
-      "high_max": 75.2,
+      "high_min": 75.2,
+      "high_max": 78.9,
       "high_models": {
-        "ncep_nbm_conus": 75.2,
-        "ecmwf_ifs025": 74.1
+        "ncep_hrrr_conus": 78.9,
+        "ncep_nbm_conus": 77.7,
+        "ecmwf_ifs025": 75.2
       },
-      "low_mean": 48.6,
+      "low_mean": 48.7,
       "low_std": 3.0,
       "low_models": {
-        "ncep_nbm_conus": 50.4,
-        "ecmwf_ifs025": 46.9
+        "ncep_hrrr_conus": 48.9,
+        "ncep_nbm_conus": 50.6,
+        "ecmwf_ifs025": 46.7
       },
-      "model_count": 2
+      "model_count": 3
     },
     "2026-04-24": {
-      "high_mean": 67.7,
+      "high_mean": 70.2,
       "high_std": 3.0,
-      "high_min": 67.5,
-      "high_max": 67.9,
+      "high_min": 69.4,
+      "high_max": 71.0,
       "high_models": {
-        "ncep_nbm_conus": 67.9,
-        "ecmwf_ifs025": 67.5
+        "ncep_nbm_conus": 69.4,
+        "ecmwf_ifs025": 71.0
       },
-      "low_mean": 51.6,
-      "low_std": 3.68,
+      "low_mean": 52.5,
+      "low_std": 3.32,
       "low_models": {
-        "ncep_nbm_conus": 54.2,
-        "ecmwf_ifs025": 49.0
+        "ncep_nbm_conus": 54.9,
+        "ecmwf_ifs025": 50.2
       },
       "model_count": 2
     }
   },
   "ATL": {
     "2026-04-22": {
-      "high_mean": 81.2,
+      "high_mean": 81.0,
       "high_std": 3.0,
-      "high_min": 81.1,
-      "high_max": 81.4,
+      "high_min": 80.6,
+      "high_max": 81.8,
       "high_models": {
-        "ncep_hrrr_conus": 81.4,
-        "ncep_nbm_conus": 81.1,
-        "ecmwf_ifs025": 81.2
+        "ncep_hrrr_conus": 81.8,
+        "ncep_nbm_conus": 80.7,
+        "ecmwf_ifs025": 80.6
       },
-      "low_mean": 55.8,
+      "low_mean": 56.3,
       "low_std": 3.0,
       "low_models": {
-        "ncep_hrrr_conus": 53.3,
-        "ncep_nbm_conus": 57.0,
-        "ecmwf_ifs025": 57.0
+        "ncep_hrrr_conus": 56.1,
+        "ncep_nbm_conus": 57.7,
+        "ecmwf_ifs025": 55.1
       },
       "model_count": 3
     },
     "2026-04-23": {
-      "high_mean": 81.9,
+      "high_mean": 82.9,
       "high_std": 3.0,
-      "high_min": 81.9,
-      "high_max": 81.9,
+      "high_min": 82.4,
+      "high_max": 83.7,
       "high_models": {
-        "ncep_nbm_conus": 81.9,
-        "ecmwf_ifs025": 81.9
+        "ncep_hrrr_conus": 83.7,
+        "ncep_nbm_conus": 82.6,
+        "ecmwf_ifs025": 82.4
       },
-      "low_mean": 57.6,
+      "low_mean": 57.0,
       "low_std": 3.0,
       "low_models": {
-        "ncep_nbm_conus": 58.9,
+        "ncep_hrrr_conus": 56.1,
+        "ncep_nbm_conus": 58.5,
         "ecmwf_ifs025": 56.4
       },
-      "model_count": 2
+      "model_count": 3
     },
     "2026-04-24": {
-      "high_mean": 82.7,
+      "high_mean": 82.2,
       "high_std": 3.0,
-      "high_min": 82.3,
-      "high_max": 83.0,
+      "high_min": 81.5,
+      "high_max": 82.9,
       "high_models": {
-        "ncep_nbm_conus": 83.0,
-        "ecmwf_ifs025": 82.3
+        "ncep_nbm_conus": 82.9,
+        "ecmwf_ifs025": 81.5
       },
-      "low_mean": 59.4,
+      "low_mean": 59.2,
       "low_std": 3.0,
       "low_models": {
         "ncep_nbm_conus": 61.0,
-        "ecmwf_ifs025": 57.8
+        "ecmwf_ifs025": 57.5
       },
       "model_count": 2
     }
   },
   "HOU": {
-    "2026-04-21": {
-      "high_mean": 66.7,
-      "high_std": 3.0,
-      "high_min": 65.2,
-      "high_max": 68.3,
-      "high_models": {
-        "ncep_hrrr_conus": 65.2,
-        "ncep_nbm_conus": 68.3,
-        "ecmwf_ifs025": 66.6
-      },
-      "low_mean": 61.2,
-      "low_std": 3.0,
-      "low_models": {
-        "ncep_hrrr_conus": 61.2,
-        "ncep_nbm_conus": 62.1,
-        "ecmwf_ifs025": 60.4
-      },
-      "model_count": 3
-    },
     "2026-04-22": {
-      "high_mean": 77.0,
+      "high_mean": 76.6,
       "high_std": 3.0,
-      "high_min": 75.3,
-      "high_max": 78.0,
+      "high_min": 75.9,
+      "high_max": 77.6,
       "high_models": {
-        "ncep_hrrr_conus": 78.0,
-        "ncep_nbm_conus": 77.6,
-        "ecmwf_ifs025": 75.3
+        "ncep_hrrr_conus": 77.6,
+        "ncep_nbm_conus": 76.4,
+        "ecmwf_ifs025": 75.9
       },
-      "low_mean": 63.2,
+      "low_mean": 63.3,
       "low_std": 3.0,
       "low_models": {
-        "ncep_hrrr_conus": 61.6,
-        "ncep_nbm_conus": 64.0,
-        "ecmwf_ifs025": 64.1
+        "ncep_hrrr_conus": 62.5,
+        "ncep_nbm_conus": 63.6,
+        "ecmwf_ifs025": 63.7
       },
       "model_count": 3
     },
     "2026-04-23": {
-      "high_mean": 81.1,
+      "high_mean": 80.4,
       "high_std": 3.0,
-      "high_min": 80.5,
-      "high_max": 81.7,
+      "high_min": 79.5,
+      "high_max": 82.0,
       "high_models": {
-        "ncep_nbm_conus": 81.7,
-        "ecmwf_ifs025": 80.5
+        "ncep_hrrr_conus": 79.5,
+        "ncep_nbm_conus": 82.0,
+        "ecmwf_ifs025": 79.7
       },
-      "low_mean": 67.5,
+      "low_mean": 67.4,
       "low_std": 3.0,
       "low_models": {
-        "ncep_nbm_conus": 69.0,
-        "ecmwf_ifs025": 66.0
+        "ncep_hrrr_conus": 66.4,
+        "ncep_nbm_conus": 68.6,
+        "ecmwf_ifs025": 67.1
+      },
+      "model_count": 3
+    },
+    "2026-04-24": {
+      "high_mean": 84.1,
+      "high_std": 3.0,
+      "high_min": 82.4,
+      "high_max": 85.8,
+      "high_models": {
+        "ncep_nbm_conus": 85.8,
+        "ecmwf_ifs025": 82.4
+      },
+      "low_mean": 70.6,
+      "low_std": 3.0,
+      "low_models": {
+        "ncep_nbm_conus": 71.1,
+        "ecmwf_ifs025": 70.1
       },
       "model_count": 2
     }
   },
   "PHX": {
-    "2026-04-21": {
-      "high_mean": 94.1,
-      "high_std": 3.0,
-      "high_min": 93.6,
-      "high_max": 94.7,
-      "high_models": {
-        "ncep_hrrr_conus": 94.7,
-        "ncep_nbm_conus": 93.6,
-        "ecmwf_ifs025": 93.9
-      },
-      "low_mean": 70.8,
-      "low_std": 3.0,
-      "low_models": {
-        "ncep_hrrr_conus": 69.4,
-        "ncep_nbm_conus": 70.7,
-        "ecmwf_ifs025": 72.4
-      },
-      "model_count": 3
-    },
     "2026-04-22": {
-      "high_mean": 87.2,
+      "high_mean": 87.4,
       "high_std": 3.0,
-      "high_min": 86.6,
-      "high_max": 87.7,
+      "high_min": 86.9,
+      "high_max": 87.9,
       "high_models": {
-        "ncep_hrrr_conus": 87.4,
-        "ncep_nbm_conus": 86.6,
-        "ecmwf_ifs025": 87.7
+        "ncep_hrrr_conus": 87.5,
+        "ncep_nbm_conus": 86.9,
+        "ecmwf_ifs025": 87.9
       },
-      "low_mean": 64.8,
+      "low_mean": 68.0,
       "low_std": 3.0,
       "low_models": {
-        "ncep_hrrr_conus": 61.5,
-        "ncep_nbm_conus": 66.1,
-        "ecmwf_ifs025": 66.8
+        "ncep_hrrr_conus": 68.4,
+        "ncep_nbm_conus": 67.6,
+        "ecmwf_ifs025": 68.1
       },
       "model_count": 3
     },
     "2026-04-23": {
-      "high_mean": 84.8,
+      "high_mean": 85.5,
       "high_std": 3.0,
-      "high_min": 84.2,
-      "high_max": 85.5,
+      "high_min": 85.3,
+      "high_max": 85.7,
       "high_models": {
-        "ncep_nbm_conus": 85.5,
-        "ecmwf_ifs025": 84.2
+        "ncep_hrrr_conus": 85.5,
+        "ncep_nbm_conus": 85.7,
+        "ecmwf_ifs025": 85.3
       },
-      "low_mean": 65.7,
+      "low_mean": 63.2,
+      "low_std": 4.2,
+      "low_models": {
+        "ncep_hrrr_conus": 58.6,
+        "ncep_nbm_conus": 64.3,
+        "ecmwf_ifs025": 66.8
+      },
+      "model_count": 3
+    },
+    "2026-04-24": {
+      "high_mean": 89.7,
+      "high_std": 3.0,
+      "high_min": 89.6,
+      "high_max": 89.8,
+      "high_models": {
+        "ncep_nbm_conus": 89.6,
+        "ecmwf_ifs025": 89.8
+      },
+      "low_mean": 65.5,
       "low_std": 3.0,
       "low_models": {
-        "ncep_nbm_conus": 64.4,
-        "ecmwf_ifs025": 67.0
+        "ncep_nbm_conus": 65.7,
+        "ecmwf_ifs025": 65.3
       },
       "model_count": 2
     }
