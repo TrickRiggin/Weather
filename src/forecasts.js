@@ -58,12 +58,12 @@ export const FORECASTS = {
   },
   "LAX": {
     "2026-04-23": {
-      "high_mean": 73.0,
-      "high_std": 4.87,
+      "high_mean": 73.1,
+      "high_std": 4.85,
       "high_min": 68.4,
       "high_max": 78.1,
       "high_models": {
-        "ncep_hrrr_conus": 72.4,
+        "ncep_hrrr_conus": 72.9,
         "ncep_nbm_conus": 68.4,
         "ecmwf_ifs025": 78.1
       },
@@ -116,11 +116,11 @@ export const FORECASTS = {
   "CHI": {
     "2026-04-23": {
       "high_mean": 77.8,
-      "high_std": 3.92,
+      "high_std": 3.98,
       "high_min": 75.1,
-      "high_max": 82.3,
+      "high_max": 82.4,
       "high_models": {
-        "ncep_hrrr_conus": 82.3,
+        "ncep_hrrr_conus": 82.4,
         "ncep_nbm_conus": 75.1,
         "ecmwf_ifs025": 76.0
       },
@@ -229,12 +229,12 @@ export const FORECASTS = {
   },
   "DAL": {
     "2026-04-23": {
-      "high_mean": 78.8,
+      "high_mean": 78.7,
       "high_std": 3.0,
-      "high_min": 77.5,
+      "high_min": 77.4,
       "high_max": 80.0,
       "high_models": {
-        "ncep_hrrr_conus": 77.5,
+        "ncep_hrrr_conus": 77.4,
         "ncep_nbm_conus": 80.0,
         "ecmwf_ifs025": 78.8
       },
@@ -260,7 +260,7 @@ export const FORECASTS = {
       "low_mean": 69.8,
       "low_std": 3.0,
       "low_models": {
-        "ncep_hrrr_conus": 69.5,
+        "ncep_hrrr_conus": 69.4,
         "ncep_nbm_conus": 70.5,
         "ecmwf_ifs025": 69.4
       },
@@ -286,12 +286,12 @@ export const FORECASTS = {
   },
   "DEN": {
     "2026-04-23": {
-      "high_mean": 63.1,
+      "high_mean": 62.9,
       "high_std": 3.0,
       "high_min": 61.9,
       "high_max": 64.3,
       "high_models": {
-        "ncep_hrrr_conus": 63.1,
+        "ncep_hrrr_conus": 62.5,
         "ncep_nbm_conus": 61.9,
         "ecmwf_ifs025": 64.3
       },
@@ -346,9 +346,9 @@ export const FORECASTS = {
       "high_mean": 77.4,
       "high_std": 3.0,
       "high_min": 76.9,
-      "high_max": 78.0,
+      "high_max": 78.1,
       "high_models": {
-        "ncep_hrrr_conus": 78.0,
+        "ncep_hrrr_conus": 78.1,
         "ncep_nbm_conus": 77.2,
         "ecmwf_ifs025": 76.9
       },
@@ -371,10 +371,10 @@ export const FORECASTS = {
         "ncep_nbm_conus": 70.1,
         "ecmwf_ifs025": 72.7
       },
-      "low_mean": 52.7,
+      "low_mean": 52.9,
       "low_std": 3.0,
       "low_models": {
-        "ncep_hrrr_conus": 52.3,
+        "ncep_hrrr_conus": 53.0,
         "ncep_nbm_conus": 54.3,
         "ecmwf_ifs025": 51.4
       },
@@ -400,12 +400,12 @@ export const FORECASTS = {
   },
   "ATL": {
     "2026-04-23": {
-      "high_mean": 82.0,
+      "high_mean": 82.1,
       "high_std": 3.0,
       "high_min": 81.6,
-      "high_max": 82.2,
+      "high_max": 82.4,
       "high_models": {
-        "ncep_hrrr_conus": 82.2,
+        "ncep_hrrr_conus": 82.4,
         "ncep_nbm_conus": 82.2,
         "ecmwf_ifs025": 81.6
       },
@@ -457,12 +457,12 @@ export const FORECASTS = {
   },
   "HOU": {
     "2026-04-23": {
-      "high_mean": 80.4,
+      "high_mean": 80.5,
       "high_std": 3.0,
-      "high_min": 79.5,
+      "high_min": 79.6,
       "high_max": 82.1,
       "high_models": {
-        "ncep_hrrr_conus": 79.5,
+        "ncep_hrrr_conus": 79.7,
         "ncep_nbm_conus": 82.1,
         "ecmwf_ifs025": 79.6
       },
@@ -485,10 +485,10 @@ export const FORECASTS = {
         "ncep_nbm_conus": 83.8,
         "ecmwf_ifs025": 83.0
       },
-      "low_mean": 70.8,
+      "low_mean": 70.6,
       "low_std": 3.0,
       "low_models": {
-        "ncep_hrrr_conus": 70.1,
+        "ncep_hrrr_conus": 69.4,
         "ncep_nbm_conus": 72.0,
         "ecmwf_ifs025": 70.4
       },
@@ -514,12 +514,12 @@ export const FORECASTS = {
   },
   "PHX": {
     "2026-04-23": {
-      "high_mean": 85.8,
+      "high_mean": 85.7,
       "high_std": 3.0,
       "high_min": 85.1,
-      "high_max": 86.4,
+      "high_max": 86.2,
       "high_models": {
-        "ncep_hrrr_conus": 86.4,
+        "ncep_hrrr_conus": 86.2,
         "ncep_nbm_conus": 85.8,
         "ecmwf_ifs025": 85.1
       },
