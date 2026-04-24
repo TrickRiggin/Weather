@@ -82,6 +82,11 @@ SIGNAL_BLOCKLIST = frozenset([
 # after bias correction, the correction is insufficient and we're wrong.
 SUPPRESS_HIGH_YES = True
 
+# Pause all high-temperature signals until the high model is rebuilt.
+# Audit 2026-04-24: high less/greater Brier was 66.7% worse than market mid,
+# and recorded high picks were 24.7% winners.
+SUPPRESS_HIGH_SIGNALS = True
+
 # ============================================================
 #  HELPERS
 # ============================================================
@@ -606,7 +611,9 @@ def calculate_edges(ensembles, markets, pace_data=None):
                 # can't price them (max ~20% for any bucket, even when models cluster there).
                 # Still calculate edge for display, but don't generate actionable signals.
                 min_edge = HIGH_EDGE_THRESHOLD if mtype == "high" else EDGE_THRESHOLD
-                if (city_code, mtype) in SIGNAL_BLOCKLIST:
+                if SUPPRESS_HIGH_SIGNALS and mtype == "high":
+                    signal = None
+                elif (city_code, mtype) in SIGNAL_BLOCKLIST:
                     signal = None
                 elif strike_type != "between" and abs(edge) >= min_edge:
                     # Kill switch: huge disagreements with market are model failures
@@ -667,6 +674,13 @@ def calculate_edges(ensembles, markets, pace_data=None):
                   and (HIGH_EDGE_THRESHOLD if e["type"] == "high" else EDGE_THRESHOLD) <= abs(e["edge"])
                   and abs(e["edge"]) > MAX_DISAGREEMENT])
     blocked = len([e for e in edges if (e["city"], e["type"]) in SIGNAL_BLOCKLIST])
+    suppressed_highs = len([e for e in edges
+                            if SUPPRESS_HIGH_SIGNALS
+                            and e["type"] == "high"
+                            and e["signal"] is None
+                            and abs(e["edge"]) >= HIGH_EDGE_THRESHOLD
+                            and abs(e["edge"]) <= MAX_DISAGREEMENT
+                            and e["strike_type"] != "between"])
     suppressed_high_yes = len([e for e in edges
                                if SUPPRESS_HIGH_YES
                                and e["type"] == "high"
@@ -678,7 +692,8 @@ def calculate_edges(ensembles, markets, pace_data=None):
                                and (e["city"], e["type"]) not in SIGNAL_BLOCKLIST])
     print(f"  Signals: {len(signals)}  "
           f"(low floor {EDGE_THRESHOLD*100:.0f}%, high floor {HIGH_EDGE_THRESHOLD*100:.0f}%, kill {MAX_DISAGREEMENT*100:.0f}%)")
-    print(f"    killed {killed} over-disagreement, blocked {blocked} city/type, suppressed {suppressed_high_yes} high-YES")
+    print(f"    killed {killed} over-disagreement, blocked {blocked} city/type, "
+          f"suppressed {suppressed_highs} highs, {suppressed_high_yes} high-YES")
     if signals:
         top = signals[0]
         print(f"  Best edge: {top['city_name']} {top['type']} {top['threshold']}F "
@@ -943,6 +958,22 @@ Respond in JSON format:
 # ============================================================
 
 DATA_DIR = Path(__file__).parent / "data"
+
+
+def load_jsonl(path):
+    """Load JSONL rows, skipping malformed lines."""
+    if not path.exists():
+        return []
+
+    rows = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            rows.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    return rows
 
 
 def record_contract_snapshots(edges, ensembles, pace_data):
@@ -1421,12 +1452,7 @@ def backtest_report():
         return
 
     # Load resolutions
-    resolutions = []
-    for line in resolutions_file.read_text(encoding="utf-8").splitlines():
-        try:
-            resolutions.append(json.loads(line))
-        except json.JSONDecodeError:
-            continue
+    resolutions = load_jsonl(resolutions_file)
 
     # Count total signals
     total_signals = 0
@@ -1558,6 +1584,206 @@ def backtest_report():
               f"actual YES rate {actual_yes/len(subset):.1%} "
               f"(predicted avg {sum(r['our_prob'] for r in subset)/len(subset):.1%})")
 
+    print("\n  NOTE:")
+    print("    These are recorded picks from whatever strategy version existed at the time.")
+    print("    Run `python refresh_weather.py --audit` to replay the current strategy rules")
+    print("    from the full resolved contract-snapshot dataset.")
+
+    print(f"\n{'=' * 65}")
+
+
+def brier_score(rows, prob_key):
+    """Mean squared probability error against contract_resolved_yes."""
+    vals = []
+    for r in rows:
+        if r.get(prob_key) is None or r.get("contract_resolved_yes") is None:
+            continue
+        vals.append((float(r[prob_key]) - float(r["contract_resolved_yes"])) ** 2)
+    return sum(vals) / len(vals) if vals else None
+
+
+def active_strategy_signal(record):
+    """Replay the current production signal gates against a resolved contract snapshot."""
+    strike_type = record.get("strike_type")
+    if strike_type == "between":
+        return None
+
+    city = record.get("city")
+    mtype = record.get("type")
+    if (city, mtype) in SIGNAL_BLOCKLIST:
+        return None
+
+    if SUPPRESS_HIGH_SIGNALS and mtype == "high":
+        return None
+
+    try:
+        edge = float(record.get("edge"))
+    except (TypeError, ValueError):
+        return None
+
+    min_edge = HIGH_EDGE_THRESHOLD if mtype == "high" else EDGE_THRESHOLD
+    if abs(edge) < min_edge or abs(edge) > MAX_DISAGREEMENT:
+        return None
+
+    signal = "YES" if edge > 0 else "NO"
+    if SUPPRESS_HIGH_YES and mtype == "high" and signal == "YES":
+        return None
+    return signal
+
+
+def score_replayed_trade(record, signal):
+    """Score a replayed YES/NO signal using the historical order-book quote."""
+    contract_yes = bool(record.get("contract_resolved_yes"))
+    if signal == "YES":
+        buy_price = record.get("yes_ask") if record.get("yes_ask") is not None else record.get("market_mid")
+        win = contract_yes
+    else:
+        yes_bid = record.get("yes_bid") if record.get("yes_bid") is not None else record.get("market_mid")
+        buy_price = 1.0 - float(yes_bid)
+        win = not contract_yes
+
+    if buy_price is None:
+        return None
+
+    buy_price = round(float(buy_price), 4)
+    pnl = round((1.0 - buy_price) if win else -buy_price, 4)
+
+    replay = dict(record)
+    replay["replay_signal"] = signal
+    replay["result"] = "WIN" if win else "LOSS"
+    replay["buy_price"] = buy_price
+    replay["pnl"] = pnl
+    return replay
+
+
+def replay_active_strategy(contract_resolutions):
+    """
+    Replay current signal gates against all resolved contract snapshots.
+    Uses the first qualifying snapshot per ticker, matching entry-signal behavior.
+    """
+    replayed = []
+    seen_tickers = set()
+
+    for record in sorted(contract_resolutions, key=lambda r: r.get("snapshot_ts", "")):
+        ticker = record.get("ticker")
+        if not ticker or ticker in seen_tickers:
+            continue
+
+        signal = active_strategy_signal(record)
+        if not signal:
+            continue
+
+        scored = score_replayed_trade(record, signal)
+        if scored is None:
+            continue
+
+        replayed.append(scored)
+        seen_tickers.add(ticker)
+
+    return replayed
+
+
+def trade_summary(rows):
+    if not rows:
+        return None
+
+    wins = sum(1 for r in rows if r.get("result") == "WIN")
+    pnl = sum(float(r.get("pnl", 0)) for r in rows)
+    risked = sum(abs(float(r.get("buy_price", 0))) for r in rows)
+    return {
+        "n": len(rows),
+        "wins": wins,
+        "win_rate": wins / len(rows),
+        "pnl": pnl,
+        "avg_pnl": pnl / len(rows),
+        "roi": pnl / risked if risked else 0,
+    }
+
+
+def print_trade_summary(label, rows, indent="  "):
+    summary = trade_summary(rows)
+    if not summary:
+        print(f"{indent}{label:<22} n=0")
+        return
+
+    print(
+        f"{indent}{label:<22} "
+        f"n={summary['n']:3d}  "
+        f"WR={summary['win_rate']:5.1%}  "
+        f"P&L=${summary['pnl']:+6.2f}  "
+        f"avg=${summary['avg_pnl']:+.4f}  "
+        f"ROI={summary['roi']:+5.1%}"
+    )
+
+
+def print_brier_row(label, rows):
+    ours = brier_score(rows, "our_prob")
+    market = brier_score(rows, "market_mid")
+    if ours is None or market is None:
+        return
+
+    skill = (market - ours) / market if market else 0
+    print(f"    {label:<20} n={len(rows):4d}  ours={ours:.4f}  market={market:.4f}  skill={skill:+.1%}")
+
+
+def audit_report():
+    """Print current-strategy replay and model-vs-market diagnostics."""
+    contract_resolutions_file = DATA_DIR / "contract_resolutions.jsonl"
+    contract_resolutions = load_jsonl(contract_resolutions_file)
+
+    if not contract_resolutions:
+        print("\n  No contract-resolution audit data yet.")
+        print("  Run the pipeline until contract snapshots have resolved.")
+        return
+
+    print(f"""
+{'=' * 65}
+  MODEL / STRATEGY AUDIT
+{'=' * 65}
+
+  Resolved contract snapshots: {len(contract_resolutions)}
+  Current gates:
+    lows  |edge| >= {EDGE_THRESHOLD:.0%}
+    highs |edge| >= {HIGH_EDGE_THRESHOLD:.0%}
+    kill  |edge| >  {MAX_DISAGREEMENT:.0%}
+    blocklist: {sorted(SIGNAL_BLOCKLIST)}
+    suppress highs: {SUPPRESS_HIGH_SIGNALS}
+    suppress high YES: {SUPPRESS_HIGH_YES}
+""")
+
+    print("  MODEL VS MARKET BRIER SCORE")
+    print("    Lower is better. Positive skill means our probability beat market mid.")
+    print_brier_row("all snapshots", contract_resolutions)
+    print_brier_row("less/greater", [r for r in contract_resolutions if r.get("strike_type") in ("less", "greater")])
+    print_brier_row("between", [r for r in contract_resolutions if r.get("strike_type") == "between"])
+    print_brier_row("high less/greater", [
+        r for r in contract_resolutions
+        if r.get("type") == "high" and r.get("strike_type") in ("less", "greater")
+    ])
+    print_brier_row("low less/greater", [
+        r for r in contract_resolutions
+        if r.get("type") == "low" and r.get("strike_type") in ("less", "greater")
+    ])
+
+    replayed = replay_active_strategy(contract_resolutions)
+
+    print("\n  ACTIVE STRATEGY REPLAY")
+    print("    First qualifying snapshot per ticker, scored at historical bid/ask.")
+    print_trade_summary("current gates", replayed)
+
+    for mtype in ["high", "low"]:
+        subset = [r for r in replayed if r.get("type") == mtype]
+        print_trade_summary(mtype, subset, indent="    ")
+
+    for direction in ["YES", "NO"]:
+        subset = [r for r in replayed if r.get("replay_signal") == direction]
+        print_trade_summary(direction, subset, indent="    ")
+
+    for horizon in [0, 1, 2]:
+        subset = [r for r in replayed if r.get("horizon_bucket") == horizon]
+        if subset:
+            print_trade_summary(f"horizon {horizon}", subset, indent="    ")
+
     print(f"\n{'=' * 65}")
 
 
@@ -1623,6 +1849,7 @@ def write_data_files(forecasts, ensembles, markets, edges, observations, pace_da
         "max_disagreement": MAX_DISAGREEMENT,
         "signal_blocklist": [list(x) for x in SIGNAL_BLOCKLIST],
         "suppress_high_yes": SUPPRESS_HIGH_YES,
+        "suppress_high_signals": SUPPRESS_HIGH_SIGNALS,
     }
     _write_js(src_dir / "meta.js", "META", meta)
     print(f"  Wrote meta to src/meta.js")
@@ -1685,6 +1912,30 @@ def write_data_files(forecasts, ensembles, markets, edges, observations, pace_da
         directions.append({"label": d, "total": len(d_picks),
                            "wins": d_wins, "pnl": round(d_pnl, 2)})
 
+    # Active-strategy replay from all resolved contract snapshots. This answers
+    # "what would today's gates have selected?" rather than "what did older gates record?"
+    contract_resolutions = load_jsonl(DATA_DIR / "contract_resolutions.jsonl")
+    active_replay = replay_active_strategy(contract_resolutions)
+    active_summary = trade_summary(active_replay) or {
+        "n": 0, "wins": 0, "win_rate": 0, "pnl": 0, "avg_pnl": 0, "roi": 0,
+    }
+    active_groups = {}
+    for key, value in [
+        ("low", [r for r in active_replay if r.get("type") == "low"]),
+        ("high", [r for r in active_replay if r.get("type") == "high"]),
+        ("yes", [r for r in active_replay if r.get("replay_signal") == "YES"]),
+        ("no", [r for r in active_replay if r.get("replay_signal") == "NO"]),
+        ("horizon_0", [r for r in active_replay if r.get("horizon_bucket") == 0]),
+        ("horizon_1", [r for r in active_replay if r.get("horizon_bucket") == 1]),
+    ]:
+        g = trade_summary(value)
+        active_groups[key] = {
+            "total": g["n"] if g else 0,
+            "wins": g["wins"] if g else 0,
+            "pnl": round(g["pnl"], 2) if g else 0,
+            "roi": round(g["roi"] * 100, 1) if g else 0,
+        }
+
     # Picks as compact arrays: [resolved_at, city, date, type, threshold, signal, edge, our_prob, market_mid, actual_temp, result, buy_price, pnl]
     picks = []
     for r in resolutions:
@@ -1709,6 +1960,16 @@ def write_data_files(forecasts, ensembles, markets, edges, observations, pace_da
         },
         "tiers": tiers,
         "directions": directions,
+        "active_strategy": {
+            "total": active_summary["n"],
+            "wins": active_summary["wins"],
+            "losses": active_summary["n"] - active_summary["wins"],
+            "win_rate": round(active_summary["win_rate"], 4),
+            "total_pnl": round(active_summary["pnl"], 2),
+            "avg_pnl": round(active_summary["avg_pnl"], 4),
+            "roi": round(active_summary["roi"] * 100, 1),
+            "groups": active_groups,
+        },
         "picks": picks,
     }
     _write_js(src_dir / "results.js", "RESULTS", results_data)
@@ -1731,6 +1992,7 @@ def main():
     write_mode = "--write-data" in sys.argv
     skip_ai = "--skip-ai" in sys.argv
     backtest_only = "--backtest" in sys.argv
+    audit_only = "--audit" in sys.argv
 
     # Backtest mode — just print stats and exit
     if backtest_only:
@@ -1738,6 +2000,10 @@ def main():
         print("  WEATHER EDGE — Backtest Report")
         print("=" * 65)
         backtest_report()
+        return
+
+    if audit_only:
+        audit_report()
         return
 
     print("=" * 65)

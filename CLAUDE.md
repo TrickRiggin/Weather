@@ -10,6 +10,7 @@ Weather market prediction platform. React 19 + Vite frontend, Python data pipeli
 - `src/App.jsx` — React frontend (Scanner, Cities, Guide tabs)
 - `refresh_weather.py` — Python pipeline (OpenMeteo, Kalshi, NWS, pace tracking, historical tracking)
 - `calibrate.py` — Historical verification: fetches 2yr actuals + 1yr model forecasts, computes city/type/month sigma + bias
+- `python refresh_weather.py --audit` — current-strategy replay from resolved contract snapshots, plus model-vs-market Brier diagnostics
 - Auto-generated JS: `markets.js`, `forecasts.js`, `edges.js`, `observations.js`, `ai_analysis.js`, `meta.js`, `results.js`
 - `data/signals.jsonl` — Historical edge signal snapshots (append-only)
 - `data/resolutions.jsonl` — Resolved signals with actual temps, WIN/LOSS, P&L
@@ -53,6 +54,7 @@ edge = our_probability - kalshi_midpoint
 #   lows:  signal when 12% <= |edge| <= 20%
 #   highs: signal when 18% <= |edge| <= 20%   (lower floor removed, backtest lost -$3.21 in 0.12-0.18 band)
 # Kill switch (both): |edge| > 20% = model failure, not alpha
+# HIGH signals are paused entirely until the high model is rebuilt
 # HIGH YES signals are ALWAYS suppressed — 2/39 = 5% WR historical (residual cold-bias symptom)
 # Blocklist: (CHI, high), (DEN, high), (DEN, low) — calibration bias wrong-direction or under-correcting
 
@@ -74,6 +76,7 @@ Near-settled filter: skip contracts with mid <= 8% or mid >= 92%
 
 ## Refresh Schedule
 - **Every 20-30 min** — cron-job.org -> `repository_dispatch` (type: `light-refresh`)
+- **GitHub schedule fallback** — native Actions cron every 30 minutes so the app does not silently go stale if the external cron fails
 - Single workflow handles everything (no heavy/light split — pipeline runs in ~45s)
 - Full pipeline: OpenMeteo forecasts -> ensemble -> NWS obs -> pace (display only) -> Kalshi markets -> edges (ensemble+calibration) -> record signals -> resolve past signals -> write src/
 
@@ -112,7 +115,9 @@ Near-settled filter: skip contracts with mid <= 8% or mid >= 92%
 - **Resolution**: Each refresh checks if past signals' markets have closed (close_time + 2h), fetches actual temps from NWS observations, scores WIN/LOSS with P&L
 - **Actual temps source**: NWS airport station observations (same stations as pace tracker) — max/min temp for the date in the city's local timezone
 - **P&L model**: $1 bet at market ask (YES signals) or 1-bid (NO signals), collect $1 on win
-- **Backtest report**: `python refresh_weather.py --backtest` — win rate, P&L by edge bucket/city/type/direction, calibration
+- **Backtest report**: `python refresh_weather.py --backtest` — win rate, P&L by edge bucket/city/type/direction, calibration for the picks actually recorded at the time
+- **Strategy audit**: `python refresh_weather.py --audit` — replays the current production gates against all resolved contract snapshots, first qualifying snapshot per ticker, and compares model probabilities against Kalshi market mid by Brier score
+- **Important evaluation gotcha**: `--backtest` mixes historical strategy versions. Use `--audit` when deciding whether today's signal gates are viable.
 - **Signal schema**: `{id, snapshot_ts, city, date, type, ticker, strike_type, floor, cap, threshold, our_prob, market_mid, edge, signal, ev, yes_bid, yes_ask, volume, close_time, ensemble_mean, ensemble_std, model_count, pace_delta}`
 - **Resolution schema**: `{signal_id, ticker, city, date, type, threshold, signal, edge, our_prob, market_mid, ensemble_mean, ensemble_std, actual_temp, contract_resolved_yes, result, buy_price, pnl, resolved_at}`
 

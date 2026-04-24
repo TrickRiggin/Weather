@@ -1,6 +1,8 @@
 name: Weather Refresh
 
 on:
+  schedule:
+    - cron: "*/30 * * * *"
   repository_dispatch:
     types: [light-refresh]
   workflow_dispatch:

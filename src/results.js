@@ -46,6 +46,53 @@ export const RESULTS = {
       "pnl": -2.04
     }
   ],
+  "active_strategy": {
+    "total": 120,
+    "wins": 78,
+    "losses": 42,
+    "win_rate": 0.65,
+    "total_pnl": 6.25,
+    "avg_pnl": 0.0521,
+    "roi": 8.7,
+    "groups": {
+      "low": {
+        "total": 120,
+        "wins": 78,
+        "pnl": 6.25,
+        "roi": 8.7
+      },
+      "high": {
+        "total": 0,
+        "wins": 0,
+        "pnl": 0,
+        "roi": 0
+      },
+      "yes": {
+        "total": 42,
+        "wins": 21,
+        "pnl": 8.78,
+        "roi": 71.8
+      },
+      "no": {
+        "total": 78,
+        "wins": 57,
+        "pnl": -2.53,
+        "roi": -4.2
+      },
+      "horizon_0": {
+        "total": 20,
+        "wins": 9,
+        "pnl": -1.45,
+        "roi": -13.9
+      },
+      "horizon_1": {
+        "total": 100,
+        "wins": 69,
+        "pnl": 7.7,
+        "roi": 12.6
+      }
+    }
+  },
   "picks": [
     [
       "2026-04-24T15:15:37Z",

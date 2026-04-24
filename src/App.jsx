@@ -27,6 +27,7 @@ const HIGH_EDGE_THRESHOLD = META?.high_edge_threshold ?? EDGE_THRESHOLD;
 const MAX_DISAGREEMENT = META?.max_disagreement ?? 0.2;
 const SIGNAL_BLOCKLIST = new Set((META?.signal_blocklist ?? []).map(([c, t]) => `${c}|${t}`));
 const SUPPRESS_HIGH_YES = META?.suppress_high_yes ?? false;
+const SUPPRESS_HIGH_SIGNALS = META?.suppress_high_signals ?? false;
 const edgeFloorFor = (type) => (type === "high" ? HIGH_EDGE_THRESHOLD : EDGE_THRESHOLD);
 
 // ========== HELPERS ==========
@@ -122,6 +123,16 @@ const getRecommendationState = (edge) => {
       background: "rgba(245, 158, 11, 0.12)",
       border: "rgba(245, 158, 11, 0.24)",
       text: "#f6b756",
+    };
+  }
+
+  if (SUPPRESS_HIGH_SIGNALS && edge?.type === "high" && absEdge >= floor) {
+    return {
+      label: "PAUSED",
+      detail: "High model offline",
+      background: "rgba(100, 116, 139, 0.14)",
+      border: "rgba(100, 116, 139, 0.24)",
+      text: "#94a3b8",
     };
   }
 
@@ -226,7 +237,8 @@ function App() {
     rangeOnly: allEdges.filter((edge) => !edge.signal && edge.strike_type === "between" && Math.abs(edge.edge || 0) >= edgeFloorFor(edge.type)).length,
     killed: allEdges.filter((edge) => !edge.signal && edge.strike_type !== "between" && Math.abs(edge.edge || 0) > MAX_DISAGREEMENT).length,
     blocked: allEdges.filter((edge) => !edge.signal && SIGNAL_BLOCKLIST.has(`${edge.city}|${edge.type}`) && Math.abs(edge.edge || 0) >= edgeFloorFor(edge.type)).length,
-    highYes: allEdges.filter((edge) => !edge.signal && SUPPRESS_HIGH_YES && edge.type === "high" && edge.edge > 0 && Math.abs(edge.edge) >= edgeFloorFor(edge.type) && Math.abs(edge.edge) <= MAX_DISAGREEMENT && edge.strike_type !== "between" && !SIGNAL_BLOCKLIST.has(`${edge.city}|${edge.type}`)).length,
+    highPaused: allEdges.filter((edge) => !edge.signal && SUPPRESS_HIGH_SIGNALS && edge.type === "high" && Math.abs(edge.edge || 0) >= edgeFloorFor(edge.type) && Math.abs(edge.edge || 0) <= MAX_DISAGREEMENT && edge.strike_type !== "between").length,
+    highYes: allEdges.filter((edge) => !edge.signal && !SUPPRESS_HIGH_SIGNALS && SUPPRESS_HIGH_YES && edge.type === "high" && edge.edge > 0 && Math.abs(edge.edge) >= edgeFloorFor(edge.type) && Math.abs(edge.edge) <= MAX_DISAGREEMENT && edge.strike_type !== "between" && !SIGNAL_BLOCKLIST.has(`${edge.city}|${edge.type}`)).length,
   }), [allEdges]);
 
   const cityList = Object.keys(CITY_NAMES);
@@ -247,7 +259,7 @@ function App() {
           <div className="hero-kicker">AA Weather Edge</div>
           <h1 className="hero-title">Faster reads on weather markets.</h1>
           <p className="hero-copy">
-            Pace-aware temperature probabilities for the highest-volume Kalshi cities, tuned by city,
+            Calibration-aware temperature probabilities for the highest-volume Kalshi cities, tuned by city,
             month, and forecast horizon without wasting the top of the page on vanity stats.
           </p>
           <div className="hero-status-row">
@@ -466,6 +478,9 @@ function App() {
                     : ""}
                   {boardStatus.killed > 0
                     ? ` ${boardStatus.killed} more were blocked by the ${Math.round(MAX_DISAGREEMENT * 100)}% disagreement kill switch.`
+                    : ""}
+                  {boardStatus.highPaused > 0
+                    ? ` ${boardStatus.highPaused} high-temperature edges were paused while the high model is offline.`
                     : ""}
                   {boardStatus.highYes > 0
                     ? ` ${boardStatus.highYes} high-YES edges were suppressed (the model's weakest signal type in backtesting).`
@@ -827,6 +842,7 @@ function App() {
           const summary = RESULTS?.summary || {};
           const tiers = RESULTS?.tiers || [];
           const directions = RESULTS?.directions || [];
+          const activeStrategy = RESULTS?.active_strategy || null;
           const allPicks = (RESULTS?.picks || []).map(p => ({
             resolved_at: p[0], city: p[1], date: p[2], type: p[3],
             threshold: p[4], signal: p[5], edge: p[6], our_prob: p[7],
@@ -907,6 +923,34 @@ function App() {
                     </div>
                   ))}
                 </div>
+
+                {activeStrategy?.total > 0 && (
+                  <div style={{ background: "#0f172a", borderRadius: 12, padding: "16px 20px", marginBottom: 12, border: "1px solid #1e293b" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", marginBottom: 12, flexWrap: "wrap" }}>
+                      <div>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: "#64748b", letterSpacing: 2, textTransform: "uppercase", marginBottom: 4 }}>Current gate replay</div>
+                        <div style={{ fontSize: 12, color: "#94a3b8" }}>Resolved snapshots, first qualifying quote per ticker</div>
+                      </div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <span className="signal-meta-chip">Highs paused</span>
+                        <span className="signal-meta-chip">Range display-only</span>
+                      </div>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 10 }}>
+                      {[
+                        { label: "Replay WR", value: `${(activeStrategy.win_rate * 100).toFixed(1)}%`, color: activeStrategy.win_rate >= 0.55 ? "#22c55e" : activeStrategy.win_rate >= 0.5 ? "#f59e0b" : "#ef4444" },
+                        { label: "Replay Record", value: `${activeStrategy.wins}-${activeStrategy.losses}`, color: "#e2e8f0" },
+                        { label: "Replay P&L", value: `$${activeStrategy.total_pnl >= 0 ? "+" : ""}${activeStrategy.total_pnl.toFixed(2)}`, color: activeStrategy.total_pnl >= 0 ? "#22c55e" : "#ef4444" },
+                        { label: "Replay ROI", value: `${activeStrategy.roi >= 0 ? "+" : ""}${activeStrategy.roi.toFixed(1)}%`, color: activeStrategy.roi >= 0 ? "#22c55e" : "#ef4444" },
+                      ].map(s => (
+                        <div key={s.label} style={{ padding: "4px 0" }}>
+                          <div style={{ fontSize: 18, fontWeight: 900, color: s.color }}>{s.value}</div>
+                          <div style={{ fontSize: 10, color: "#64748b", fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", marginTop: 2 }}>{s.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Edge Tier Breakdown */}
                 <div style={{ background: "#0f172a", borderRadius: 12, padding: "16px 20px", marginBottom: 12, border: "1px solid #1e293b" }}>
@@ -1019,15 +1063,15 @@ function App() {
               },
               {
                 title: "Edge Detection",
-                content: `For each Kalshi contract (e.g. "Will NYC high be above 72F?"), we calculate P(above 72F) from our ensemble distribution and compare against the market's implied probability (the contract's midpoint price). If our probability differs by more than ${(META?.edge_threshold || 0.05) * 100}%, we flag it as a signal.`
+                content: `For each Kalshi contract, we calculate our probability from the ensemble distribution and compare it with the market midpoint. Low-temperature contracts can become signals above the ${Math.round((META?.edge_threshold || 0.12) * 100)}% floor; high-temperature signals are paused until the high model is rebuilt.`
               },
               {
                 title: "Pace Tracking",
-                content: "For same-day markets, we compare the current observed temperature against the HRRR model's hourly forecast curve. If reality is running hotter or colder than expected, we adjust our high/low forecast accordingly. This is the intraday edge signal."
+                content: "For same-day markets, we compare the current observed temperature against the HRRR model's hourly forecast curve. Pace is shown as context, but it is not fed into the probability model after backtesting showed it made same-day highs worse."
               },
               {
                 title: "Signal Strength",
-                content: "STRONG (20%+ edge) — High confidence, models strongly disagree with market. SOLID (10-20%) — Good edge worth considering. LEAN (5-10%) — Marginal edge, proceed with caution."
+                content: "The current production gate is intentionally narrow: lows need a 12-20% disagreement window, very large disagreements are killed, range buckets are display-only, and highs are paused."
               },
             ].map((section, i) => (
               <div key={i} style={{ background: "#0f172a", borderRadius: 12, padding: "16px 20px", marginBottom: 12, border: "1px solid #1e293b" }}>
