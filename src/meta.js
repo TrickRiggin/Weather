@@ -1,5 +1,5 @@
 export const META = {
-  "last_updated": "2026-04-25T03:37:38Z",
+  "last_updated": "2026-04-25T03:45:32Z",
   "cities": 10,
   "models": 3,
   "model_names": [
@@ -18,12 +18,12 @@ export const META = {
       "high"
     ],
     [
-      "DEN",
-      "low"
-    ],
-    [
       "CHI",
       "high"
+    ],
+    [
+      "DEN",
+      "low"
     ]
   ],
   "suppress_high_yes": true,
