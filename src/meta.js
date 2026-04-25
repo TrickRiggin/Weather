@@ -1,5 +1,5 @@
 export const META = {
-  "last_updated": "2026-04-25T21:29:22Z",
+  "last_updated": "2026-04-25T21:45:25Z",
   "cities": 10,
   "models": 3,
   "model_names": [
@@ -15,15 +15,15 @@ export const META = {
   "signal_blocklist": [
     [
       "DEN",
-      "low"
-    ],
-    [
-      "DEN",
       "high"
     ],
     [
       "CHI",
       "high"
+    ],
+    [
+      "DEN",
+      "low"
     ]
   ],
   "suppress_high_yes": true,
