@@ -1,13 +1,13 @@
 export const RESULTS = {
   "summary": {
-    "total": 225,
+    "total": 226,
     "wins": 120,
-    "losses": 105,
-    "win_rate": 0.5333,
-    "total_pnl": 4.38,
-    "total_risked": 115.62,
-    "roi": 3.8,
-    "current_streak": 2
+    "losses": 106,
+    "win_rate": 0.531,
+    "total_pnl": 3.82,
+    "total_risked": 116.17,
+    "roi": 3.3,
+    "current_streak": -1
   },
   "tiers": [
     {
@@ -20,9 +20,9 @@ export const RESULTS = {
     {
       "label": "SOLID",
       "desc": "10-20%",
-      "total": 203,
+      "total": 204,
       "wins": 114,
-      "pnl": 4.8
+      "pnl": 4.25
     },
     {
       "label": "LEAN",
@@ -41,25 +41,25 @@ export const RESULTS = {
     },
     {
       "label": "NO",
-      "total": 122,
+      "total": 123,
       "wins": 91,
-      "pnl": -1.58
+      "pnl": -2.14
     }
   ],
   "active_strategy": {
-    "total": 127,
+    "total": 128,
     "wins": 83,
-    "losses": 44,
-    "win_rate": 0.6535,
-    "total_pnl": 6.75,
-    "avg_pnl": 0.0531,
-    "roi": 8.9,
+    "losses": 45,
+    "win_rate": 0.6484,
+    "total_pnl": 6.2,
+    "avg_pnl": 0.0484,
+    "roi": 8.1,
     "groups": {
       "low": {
-        "total": 127,
+        "total": 128,
         "wins": 83,
-        "pnl": 6.75,
-        "roi": 8.9
+        "pnl": 6.2,
+        "roi": 8.1
       },
       "high": {
         "total": 0,
@@ -74,10 +74,10 @@ export const RESULTS = {
         "roi": 69.9
       },
       "no": {
-        "total": 82,
+        "total": 83,
         "wins": 61,
-        "pnl": -2.3,
-        "roi": -3.6
+        "pnl": -2.85,
+        "roi": -4.5
       },
       "horizon_0": {
         "total": 20,
@@ -86,14 +86,29 @@ export const RESULTS = {
         "roi": -13.9
       },
       "horizon_1": {
-        "total": 107,
+        "total": 108,
         "wins": 74,
-        "pnl": 8.2,
-        "roi": 12.5
+        "pnl": 7.65,
+        "roi": 11.5
       }
     }
   },
   "picks": [
+    [
+      "2026-04-25T09:27:23Z",
+      "PHX",
+      "2026-04-24",
+      "low",
+      63,
+      "NO",
+      -0.1291,
+      0.3259,
+      0.455,
+      64.0,
+      "LOSS",
+      0.55,
+      -0.55
+    ],
     [
       "2026-04-25T08:14:47Z",
       "CHI",
