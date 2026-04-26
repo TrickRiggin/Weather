@@ -3,110 +3,110 @@ export const OBSERVATIONS = {
     "temp_f": 41.0,
     "observed_at": "2026-04-25T23:15:00+00:00",
     "station": "KNYC",
-    "obs_age_min": 30,
-    "pace_delta": -0.3,
-    "expected_now": 41.3,
+    "obs_age_min": 45,
+    "pace_delta": -0.1,
+    "expected_now": 41.1,
     "observed": 41.0,
     "hrrr_high": 49.2,
-    "adjusted_high": 48.9
+    "adjusted_high": 49.1
   },
   "LAX": {
-    "temp_f": 62.6,
-    "observed_at": "2026-04-25T23:25:00+00:00",
+    "temp_f": 60.8,
+    "observed_at": "2026-04-25T23:35:00+00:00",
     "station": "KLAX",
-    "obs_age_min": 20,
-    "pace_delta": -0.4,
-    "expected_now": 63.0,
-    "observed": 62.6,
+    "obs_age_min": 25,
+    "pace_delta": 0.3,
+    "expected_now": 60.5,
+    "observed": 60.8,
     "hrrr_high": 65.2,
-    "adjusted_high": 64.8
+    "adjusted_high": 65.5
   },
   "CHI": {
-    "temp_f": 50.0,
-    "observed_at": "2026-04-25T23:20:00+00:00",
+    "temp_f": 48.2,
+    "observed_at": "2026-04-25T23:40:00+00:00",
     "station": "KMDW",
-    "obs_age_min": 25,
-    "pace_delta": 6.3,
-    "expected_now": 43.7,
-    "observed": 50.0,
+    "obs_age_min": 20,
+    "pace_delta": 6.0,
+    "expected_now": 42.2,
+    "observed": 48.2,
     "hrrr_high": 48.9,
-    "adjusted_high": 55.2
+    "adjusted_high": 54.9
   },
   "MIA": {
     "temp_f": 77.0,
-    "observed_at": "2026-04-25T23:25:00+00:00",
+    "observed_at": "2026-04-25T23:40:00+00:00",
     "station": "KMIA",
     "obs_age_min": 20,
-    "pace_delta": -1.1,
-    "expected_now": 78.1,
+    "pace_delta": 1.4,
+    "expected_now": 75.6,
     "observed": 77.0,
     "hrrr_high": 84.1,
-    "adjusted_high": 83.0
+    "adjusted_high": 85.5
   },
   "DAL": {
     "temp_f": 82.4,
-    "observed_at": "2026-04-25T23:25:00+00:00",
+    "observed_at": "2026-04-25T23:35:00+00:00",
     "station": "KDFW",
-    "obs_age_min": 20,
-    "pace_delta": -2.8,
-    "expected_now": 85.2,
+    "obs_age_min": 25,
+    "pace_delta": 0.9,
+    "expected_now": 81.5,
     "observed": 82.4,
     "hrrr_high": 86.5,
-    "adjusted_high": 83.7
+    "adjusted_high": 87.4
   },
   "DEN": {
     "temp_f": 51.8,
-    "observed_at": "2026-04-25T23:25:00+00:00",
+    "observed_at": "2026-04-25T23:40:00+00:00",
     "station": "KDEN",
     "obs_age_min": 20,
-    "pace_delta": -1.7,
-    "expected_now": 53.5,
+    "pace_delta": -0.2,
+    "expected_now": 52.0,
     "observed": 51.8,
     "hrrr_high": 53.5,
-    "adjusted_high": 51.8
+    "adjusted_high": 53.3
   },
   "PHI": {
     "temp_f": 46.4,
-    "observed_at": "2026-04-25T23:25:00+00:00",
+    "observed_at": "2026-04-25T23:35:00+00:00",
     "station": "KPHL",
-    "obs_age_min": 20,
-    "pace_delta": 0.6,
-    "expected_now": 45.8,
+    "obs_age_min": 25,
+    "pace_delta": 0.7,
+    "expected_now": 45.7,
     "observed": 46.4,
     "hrrr_high": 55.6,
-    "adjusted_high": 56.2
+    "adjusted_high": 56.3
   },
   "ATL": {
     "temp_f": 73.4,
-    "observed_at": "2026-04-25T23:30:00+00:00",
+    "observed_at": "2026-04-25T23:40:00+00:00",
     "station": "KATL",
-    "obs_age_min": 15,
-    "pace_delta": 2.5,
-    "expected_now": 70.9,
+    "obs_age_min": 20,
+    "pace_delta": 4.1,
+    "expected_now": 69.3,
     "observed": 73.4,
     "hrrr_high": 71.7,
-    "adjusted_high": 74.2
+    "adjusted_high": 75.8
   },
   "HOU": {
     "temp_f": 82.4,
-    "observed_at": "2026-04-25T23:20:00+00:00",
+    "observed_at": "2026-04-25T23:35:00+00:00",
     "station": "KIAH",
     "obs_age_min": 25,
-    "pace_delta": -1.7,
-    "expected_now": 84.1,
+    "pace_delta": -0.2,
+    "expected_now": 82.6,
     "observed": 82.4,
     "hrrr_high": 89.2,
-    "adjusted_high": 87.5
+    "adjusted_high": 89.0
   },
   "PHX": {
     "temp_f": 82.4,
-    "observed_at": "2026-04-25T23:25:00+00:00",
+    "observed_at": "2026-04-25T23:40:00+00:00",
     "station": "KPHX",
     "obs_age_min": 20,
-    "pace_delta": -0.5,
-    "expected_now": 82.9,
+    "pace_delta": 0.3,
+    "expected_now": 82.1,
     "observed": 82.4,
     "hrrr_high": 83.1,
-    "adjusted_high": 82.6
+    "adjusted_high": 83.4
   }
 };
