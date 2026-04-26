@@ -1,5 +1,5 @@
 export const META = {
-  "last_updated": "2026-04-26T04:45:29Z",
+  "last_updated": "2026-04-26T06:23:05Z",
   "cities": 10,
   "models": 3,
   "model_names": [
@@ -7,15 +7,15 @@ export const META = {
     "ncep_nbm_conus",
     "ecmwf_ifs025"
   ],
-  "total_contracts": 240,
-  "total_edges": 3,
+  "total_contracts": 156,
+  "total_edges": 2,
   "edge_threshold": 0.12,
   "high_edge_threshold": 0.18,
   "max_disagreement": 0.2,
   "signal_blocklist": [
     [
       "DEN",
-      "high"
+      "low"
     ],
     [
       "CHI",
@@ -23,7 +23,7 @@ export const META = {
     ],
     [
       "DEN",
-      "low"
+      "high"
     ]
   ],
   "suppress_high_yes": true,
