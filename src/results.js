@@ -1,13 +1,13 @@
 export const RESULTS = {
   "summary": {
-    "total": 238,
+    "total": 239,
     "wins": 128,
-    "losses": 110,
-    "win_rate": 0.5378,
-    "total_pnl": 2.67,
-    "total_risked": 125.33,
-    "roi": 2.1,
-    "current_streak": 4
+    "losses": 111,
+    "win_rate": 0.5356,
+    "total_pnl": 2.4,
+    "total_risked": 125.59,
+    "roi": 1.9,
+    "current_streak": -1
   },
   "tiers": [
     {
@@ -20,9 +20,9 @@ export const RESULTS = {
     {
       "label": "SOLID",
       "desc": "10-20%",
-      "total": 216,
+      "total": 217,
       "wins": 122,
-      "pnl": 3.1
+      "pnl": 2.83
     },
     {
       "label": "LEAN",
@@ -35,9 +35,9 @@ export const RESULTS = {
   "directions": [
     {
       "label": "YES",
-      "total": 104,
+      "total": 105,
       "wins": 29,
-      "pnl": 5.81
+      "pnl": 5.54
     },
     {
       "label": "NO",
@@ -47,19 +47,19 @@ export const RESULTS = {
     }
   ],
   "active_strategy": {
-    "total": 138,
+    "total": 139,
     "wins": 90,
-    "losses": 48,
-    "win_rate": 0.6522,
-    "total_pnl": 5.25,
-    "avg_pnl": 0.038,
-    "roi": 6.2,
+    "losses": 49,
+    "win_rate": 0.6475,
+    "total_pnl": 4.98,
+    "avg_pnl": 0.0358,
+    "roi": 5.9,
     "groups": {
       "low": {
-        "total": 138,
+        "total": 139,
         "wins": 90,
-        "pnl": 5.25,
-        "roi": 6.2
+        "pnl": 4.98,
+        "roi": 5.9
       },
       "high": {
         "total": 0,
@@ -68,10 +68,10 @@ export const RESULTS = {
         "roi": 0
       },
       "yes": {
-        "total": 46,
+        "total": 47,
         "wins": 22,
-        "pnl": 8.9,
-        "roi": 67.9
+        "pnl": 8.63,
+        "roi": 64.5
       },
       "no": {
         "total": 92,
@@ -86,14 +86,29 @@ export const RESULTS = {
         "roi": -11.9
       },
       "horizon_1": {
-        "total": 117,
+        "total": 118,
         "wins": 80,
-        "pnl": 6.6,
-        "roi": 9.0
+        "pnl": 6.33,
+        "roi": 8.6
       }
     }
   },
   "picks": [
+    [
+      "2026-04-26T10:11:36Z",
+      "LAX",
+      "2026-04-25",
+      "low",
+      57,
+      "YES",
+      0.1256,
+      0.3656,
+      0.24,
+      55.4,
+      "LOSS",
+      0.27,
+      -0.27
+    ],
     [
       "2026-04-26T09:02:37Z",
       "DAL",
