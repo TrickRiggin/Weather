@@ -1,13 +1,13 @@
 export const FORECASTS = {
   "NYC": {
     "2026-04-30": {
-      "high_mean": 59.7,
+      "high_mean": 59.8,
       "high_std": 3.0,
-      "high_min": 58.4,
+      "high_min": 58.1,
       "high_max": 62.1,
       "high_models": {
-        "ncep_hrrr_conus": 58.7,
-        "ncep_nbm_conus": 58.4,
+        "ncep_hrrr_conus": 59.2,
+        "ncep_nbm_conus": 58.1,
         "ecmwf_ifs025": 62.1
       },
       "low_mean": 48.6,
@@ -30,9 +30,9 @@ export const FORECASTS = {
         "ecmwf_ifs025": 62.9
       },
       "low_mean": 45.1,
-      "low_std": 4.56,
+      "low_std": 4.51,
       "low_models": {
-        "ncep_hrrr_conus": 40.7,
+        "ncep_hrrr_conus": 40.8,
         "ncep_nbm_conus": 49.8,
         "ecmwf_ifs025": 44.7
       },
@@ -96,12 +96,12 @@ export const FORECASTS = {
       "model_count": 3
     },
     "2026-05-02": {
-      "high_mean": 72.4,
-      "high_std": 8.27,
-      "high_min": 66.6,
+      "high_mean": 72.2,
+      "high_std": 8.7,
+      "high_min": 66.0,
       "high_max": 78.3,
       "high_models": {
-        "ncep_nbm_conus": 66.6,
+        "ncep_nbm_conus": 66.0,
         "ecmwf_ifs025": 78.3
       },
       "low_mean": 57.6,
@@ -134,13 +134,13 @@ export const FORECASTS = {
       "model_count": 3
     },
     "2026-05-01": {
-      "high_mean": 44.8,
+      "high_mean": 45.0,
       "high_std": 3.0,
       "high_min": 42.9,
-      "high_max": 46.1,
+      "high_max": 46.6,
       "high_models": {
-        "ncep_hrrr_conus": 45.3,
-        "ncep_nbm_conus": 46.1,
+        "ncep_hrrr_conus": 45.4,
+        "ncep_nbm_conus": 46.6,
         "ecmwf_ifs025": 42.9
       },
       "low_mean": 38.4,
@@ -155,16 +155,16 @@ export const FORECASTS = {
     "2026-05-02": {
       "high_mean": 49.2,
       "high_std": 3.0,
-      "high_min": 48.8,
+      "high_min": 48.7,
       "high_max": 49.7,
       "high_models": {
-        "ncep_nbm_conus": 48.8,
+        "ncep_nbm_conus": 48.7,
         "ecmwf_ifs025": 49.7
       },
-      "low_mean": 37.7,
+      "low_mean": 37.6,
       "low_std": 3.0,
       "low_models": {
-        "ncep_nbm_conus": 39.3,
+        "ncep_nbm_conus": 39.1,
         "ecmwf_ifs025": 36.1
       },
       "model_count": 2
@@ -191,12 +191,12 @@ export const FORECASTS = {
       "model_count": 3
     },
     "2026-05-01": {
-      "high_mean": 85.1,
+      "high_mean": 85.0,
       "high_std": 3.0,
-      "high_min": 84.2,
+      "high_min": 83.9,
       "high_max": 86.0,
       "high_models": {
-        "ncep_hrrr_conus": 84.2,
+        "ncep_hrrr_conus": 83.9,
         "ncep_nbm_conus": 85.0,
         "ecmwf_ifs025": 86.0
       },
@@ -212,16 +212,16 @@ export const FORECASTS = {
     "2026-05-02": {
       "high_mean": 89.5,
       "high_std": 3.0,
-      "high_min": 88.0,
+      "high_min": 88.1,
       "high_max": 91.0,
       "high_models": {
-        "ncep_nbm_conus": 88.0,
+        "ncep_nbm_conus": 88.1,
         "ecmwf_ifs025": 91.0
       },
-      "low_mean": 76.1,
+      "low_mean": 76.0,
       "low_std": 3.0,
       "low_models": {
-        "ncep_nbm_conus": 76.3,
+        "ncep_nbm_conus": 76.0,
         "ecmwf_ifs025": 75.9
       },
       "model_count": 2
@@ -257,10 +257,10 @@ export const FORECASTS = {
         "ncep_nbm_conus": 61.1,
         "ecmwf_ifs025": 64.7
       },
-      "low_mean": 56.8,
+      "low_mean": 56.4,
       "low_std": 3.0,
       "low_models": {
-        "ncep_hrrr_conus": 57.4,
+        "ncep_hrrr_conus": 56.1,
         "ncep_nbm_conus": 55.5,
         "ecmwf_ifs025": 57.5
       },
@@ -286,19 +286,19 @@ export const FORECASTS = {
   },
   "DEN": {
     "2026-04-30": {
-      "high_mean": 47.3,
+      "high_mean": 47.5,
       "high_std": 3.0,
       "high_min": 46.2,
-      "high_max": 49.3,
+      "high_max": 48.9,
       "high_models": {
-        "ncep_hrrr_conus": 46.5,
-        "ncep_nbm_conus": 49.3,
+        "ncep_hrrr_conus": 47.4,
+        "ncep_nbm_conus": 48.9,
         "ecmwf_ifs025": 46.2
       },
-      "low_mean": 39.5,
+      "low_mean": 39.8,
       "low_std": 3.0,
       "low_models": {
-        "ncep_hrrr_conus": 38.4,
+        "ncep_hrrr_conus": 39.3,
         "ncep_nbm_conus": 40.4,
         "ecmwf_ifs025": 39.8
       },
@@ -314,28 +314,28 @@ export const FORECASTS = {
         "ncep_nbm_conus": 59.4,
         "ecmwf_ifs025": 58.2
       },
-      "low_mean": 35.5,
+      "low_mean": 35.1,
       "low_std": 3.0,
       "low_models": {
-        "ncep_hrrr_conus": 33.6,
-        "ncep_nbm_conus": 37.8,
+        "ncep_hrrr_conus": 32.8,
+        "ncep_nbm_conus": 37.5,
         "ecmwf_ifs025": 35.0
       },
       "model_count": 3
     },
     "2026-05-02": {
-      "high_mean": 67.9,
+      "high_mean": 68.0,
       "high_std": 3.0,
       "high_min": 66.8,
-      "high_max": 69.1,
+      "high_max": 69.3,
       "high_models": {
-        "ncep_nbm_conus": 69.1,
+        "ncep_nbm_conus": 69.3,
         "ecmwf_ifs025": 66.8
       },
-      "low_mean": 36.3,
+      "low_mean": 36.5,
       "low_std": 3.0,
       "low_models": {
-        "ncep_nbm_conus": 36.8,
+        "ncep_nbm_conus": 37.3,
         "ecmwf_ifs025": 35.8
       },
       "model_count": 2
@@ -371,10 +371,10 @@ export const FORECASTS = {
         "ncep_nbm_conus": 65.8,
         "ecmwf_ifs025": 63.2
       },
-      "low_mean": 43.7,
+      "low_mean": 43.9,
       "low_std": 3.0,
       "low_models": {
-        "ncep_hrrr_conus": 41.6,
+        "ncep_hrrr_conus": 42.3,
         "ncep_nbm_conus": 45.5,
         "ecmwf_ifs025": 44.0
       },
@@ -389,10 +389,10 @@ export const FORECASTS = {
         "ncep_nbm_conus": 60.7,
         "ecmwf_ifs025": 62.8
       },
-      "low_mean": 50.0,
+      "low_mean": 49.5,
       "low_std": 3.0,
       "low_models": {
-        "ncep_nbm_conus": 50.1,
+        "ncep_nbm_conus": 49.0,
         "ecmwf_ifs025": 49.9
       },
       "model_count": 2
@@ -409,11 +409,11 @@ export const FORECASTS = {
         "ncep_nbm_conus": 73.3,
         "ecmwf_ifs025": 70.9
       },
-      "low_mean": 59.7,
+      "low_mean": 59.8,
       "low_std": 3.0,
       "low_models": {
         "ncep_hrrr_conus": 59.7,
-        "ncep_nbm_conus": 61.4,
+        "ncep_nbm_conus": 61.6,
         "ecmwf_ifs025": 58.1
       },
       "model_count": 3
@@ -438,12 +438,12 @@ export const FORECASTS = {
       "model_count": 3
     },
     "2026-05-02": {
-      "high_mean": 62.6,
+      "high_mean": 63.0,
       "high_std": 3.0,
-      "high_min": 61.4,
+      "high_min": 62.1,
       "high_max": 63.9,
       "high_models": {
-        "ncep_nbm_conus": 61.4,
+        "ncep_nbm_conus": 62.1,
         "ecmwf_ifs025": 63.9
       },
       "low_mean": 52.5,
@@ -466,23 +466,23 @@ export const FORECASTS = {
         "ncep_nbm_conus": 82.0,
         "ecmwf_ifs025": 84.5
       },
-      "low_mean": 70.4,
+      "low_mean": 69.8,
       "low_std": 3.0,
       "low_models": {
-        "ncep_hrrr_conus": 70.0,
-        "ncep_nbm_conus": 71.3,
+        "ncep_hrrr_conus": 68.8,
+        "ncep_nbm_conus": 70.7,
         "ecmwf_ifs025": 70.0
       },
       "model_count": 3
     },
     "2026-05-01": {
-      "high_mean": 69.6,
+      "high_mean": 69.1,
       "high_std": 3.0,
-      "high_min": 69.2,
-      "high_max": 70.4,
+      "high_min": 67.5,
+      "high_max": 70.5,
       "high_models": {
-        "ncep_hrrr_conus": 69.3,
-        "ncep_nbm_conus": 70.4,
+        "ncep_hrrr_conus": 67.5,
+        "ncep_nbm_conus": 70.5,
         "ecmwf_ifs025": 69.2
       },
       "low_mean": 58.2,
@@ -514,13 +514,13 @@ export const FORECASTS = {
   },
   "PHX": {
     "2026-04-30": {
-      "high_mean": 90.5,
+      "high_mean": 90.6,
       "high_std": 3.0,
-      "high_min": 90.1,
+      "high_min": 90.2,
       "high_max": 90.9,
       "high_models": {
-        "ncep_hrrr_conus": 90.1,
-        "ncep_nbm_conus": 90.5,
+        "ncep_hrrr_conus": 90.2,
+        "ncep_nbm_conus": 90.8,
         "ecmwf_ifs025": 90.9
       },
       "low_mean": 68.3,
@@ -542,11 +542,11 @@ export const FORECASTS = {
         "ncep_nbm_conus": 90.7,
         "ecmwf_ifs025": 88.6
       },
-      "low_mean": 65.9,
-      "low_std": 3.2,
+      "low_mean": 66.2,
+      "low_std": 3.0,
       "low_models": {
-        "ncep_hrrr_conus": 62.3,
-        "ncep_nbm_conus": 68.5,
+        "ncep_hrrr_conus": 63.2,
+        "ncep_nbm_conus": 68.6,
         "ecmwf_ifs025": 66.8
       },
       "model_count": 3
@@ -554,10 +554,10 @@ export const FORECASTS = {
     "2026-05-02": {
       "high_mean": 94.0,
       "high_std": 3.0,
-      "high_min": 93.9,
+      "high_min": 94.0,
       "high_max": 94.0,
       "high_models": {
-        "ncep_nbm_conus": 93.9,
+        "ncep_nbm_conus": 94.0,
         "ecmwf_ifs025": 94.0
       },
       "low_mean": 69.6,
