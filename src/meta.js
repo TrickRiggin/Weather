@@ -1,5 +1,5 @@
 export const META = {
-  "last_updated": "2026-05-01T18:45:34Z",
+  "last_updated": "2026-05-01T18:59:40Z",
   "cities": 10,
   "models": 3,
   "model_names": [
