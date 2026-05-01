@@ -1,13 +1,13 @@
 export const RESULTS = {
   "summary": {
-    "total": 276,
-    "wins": 149,
+    "total": 277,
+    "wins": 150,
     "losses": 127,
-    "win_rate": 0.5399,
-    "total_pnl": 1.04,
-    "total_risked": 147.96,
-    "roi": 0.7,
-    "current_streak": -1
+    "win_rate": 0.5415,
+    "total_pnl": 1.26,
+    "total_risked": 148.74,
+    "roi": 0.9,
+    "current_streak": 1
   },
   "tiers": [
     {
@@ -20,9 +20,9 @@ export const RESULTS = {
     {
       "label": "SOLID",
       "desc": "10-20%",
-      "total": 254,
-      "wins": 143,
-      "pnl": 1.47
+      "total": 255,
+      "wins": 144,
+      "pnl": 1.69
     },
     {
       "label": "LEAN",
@@ -41,9 +41,9 @@ export const RESULTS = {
     },
     {
       "label": "NO",
-      "total": 156,
-      "wins": 114,
-      "pnl": -5.96
+      "total": 157,
+      "wins": 115,
+      "pnl": -5.74
     }
   ],
   "active_strategy": {
@@ -94,6 +94,21 @@ export const RESULTS = {
     }
   },
   "picks": [
+    [
+      "2026-05-01T10:01:37Z",
+      "PHX",
+      "2026-04-30",
+      "low",
+      68,
+      "NO",
+      -0.175,
+      0.075,
+      0.25,
+      66.2,
+      "WIN",
+      0.78,
+      0.22
+    ],
     [
       "2026-05-01T08:03:50Z",
       "DAL",
