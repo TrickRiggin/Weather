@@ -1,5 +1,5 @@
 export const META = {
-  "last_updated": "2026-05-01T20:06:08Z",
+  "last_updated": "2026-05-01T20:45:34Z",
   "cities": 10,
   "models": 3,
   "model_names": [
@@ -8,7 +8,7 @@ export const META = {
     "ecmwf_ifs025"
   ],
   "total_contracts": 240,
-  "total_edges": 2,
+  "total_edges": 3,
   "edge_threshold": 0.12,
   "high_edge_threshold": 0.18,
   "max_disagreement": 0.2,
