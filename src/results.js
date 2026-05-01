@@ -47,19 +47,19 @@ export const RESULTS = {
     }
   ],
   "active_strategy": {
-    "total": 175,
-    "wins": 111,
+    "total": 176,
+    "wins": 112,
     "losses": 64,
-    "win_rate": 0.6343,
-    "total_pnl": 3.73,
-    "avg_pnl": 0.0213,
-    "roi": 3.5,
+    "win_rate": 0.6364,
+    "total_pnl": 3.95,
+    "avg_pnl": 0.0224,
+    "roi": 3.7,
     "groups": {
       "low": {
-        "total": 175,
-        "wins": 111,
-        "pnl": 3.73,
-        "roi": 3.5
+        "total": 176,
+        "wins": 112,
+        "pnl": 3.95,
+        "roi": 3.7
       },
       "high": {
         "total": 0,
@@ -74,10 +74,10 @@ export const RESULTS = {
         "roi": 55.6
       },
       "no": {
-        "total": 114,
-        "wins": 83,
-        "pnl": -6.27,
-        "roi": -7.0
+        "total": 115,
+        "wins": 84,
+        "pnl": -6.05,
+        "roi": -6.7
       },
       "horizon_0": {
         "total": 28,
@@ -86,10 +86,10 @@ export const RESULTS = {
         "roi": 6.4
       },
       "horizon_1": {
-        "total": 147,
-        "wins": 94,
-        "pnl": 2.71,
-        "roi": 3.0
+        "total": 148,
+        "wins": 95,
+        "pnl": 2.93,
+        "roi": 3.2
       }
     }
   },
