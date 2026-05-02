@@ -1,112 +1,112 @@
 export const OBSERVATIONS = {
   "NYC": {
-    "temp_f": 53.1,
-    "observed_at": "2026-05-02T01:51:00+00:00",
+    "temp_f": 54.0,
+    "observed_at": "2026-05-02T02:51:00+00:00",
     "station": "KNYC",
     "obs_age_min": 54,
-    "pace_delta": 1.2,
-    "expected_now": 51.9,
-    "observed": 53.1,
+    "pace_delta": 2.6,
+    "expected_now": 51.4,
+    "observed": 54.0,
     "hrrr_high": 65.2,
-    "adjusted_high": 66.4
+    "adjusted_high": 67.8
   },
   "LAX": {
     "temp_f": 60.8,
-    "observed_at": "2026-05-02T02:30:00+00:00",
+    "observed_at": "2026-05-02T03:10:00+00:00",
     "station": "KLAX",
-    "obs_age_min": 15,
-    "pace_delta": -0.6,
-    "expected_now": 61.4,
+    "obs_age_min": 35,
+    "pace_delta": 0.4,
+    "expected_now": 60.4,
     "observed": 60.8,
     "hrrr_high": 69.3,
-    "adjusted_high": 68.7
+    "adjusted_high": 69.7
   },
   "CHI": {
     "temp_f": 41.0,
-    "observed_at": "2026-05-02T02:25:00+00:00",
+    "observed_at": "2026-05-02T03:10:00+00:00",
     "station": "KMDW",
-    "obs_age_min": 20,
-    "pace_delta": 3.1,
-    "expected_now": 37.9,
+    "obs_age_min": 35,
+    "pace_delta": 4.3,
+    "expected_now": 36.7,
     "observed": 41.0,
     "hrrr_high": 45.6,
-    "adjusted_high": 48.7
+    "adjusted_high": 49.9
   },
   "MIA": {
     "temp_f": 78.8,
-    "observed_at": "2026-05-02T02:20:00+00:00",
+    "observed_at": "2026-05-02T03:10:00+00:00",
     "station": "KMIA",
-    "obs_age_min": 25,
-    "pace_delta": 0.2,
-    "expected_now": 78.6,
+    "obs_age_min": 35,
+    "pace_delta": 0.9,
+    "expected_now": 77.9,
     "observed": 78.8,
     "hrrr_high": 85.2,
-    "adjusted_high": 85.4
+    "adjusted_high": 86.1
   },
   "DAL": {
     "temp_f": 59.0,
-    "observed_at": "2026-05-02T02:20:00+00:00",
+    "observed_at": "2026-05-02T03:10:00+00:00",
     "station": "KDFW",
-    "obs_age_min": 25,
-    "pace_delta": 0.3,
-    "expected_now": 58.7,
+    "obs_age_min": 35,
+    "pace_delta": -0.3,
+    "expected_now": 59.3,
     "observed": 59.0,
     "hrrr_high": 64.6,
-    "adjusted_high": 64.9
+    "adjusted_high": 64.3
   },
   "DEN": {
-    "temp_f": 51.8,
-    "observed_at": "2026-05-02T02:20:00+00:00",
+    "temp_f": 48.2,
+    "observed_at": "2026-05-02T03:25:00+00:00",
     "station": "KDEN",
-    "obs_age_min": 25,
-    "pace_delta": -3.8,
-    "expected_now": 55.6,
-    "observed": 51.8,
+    "obs_age_min": 20,
+    "pace_delta": -2.3,
+    "expected_now": 50.5,
+    "observed": 48.2,
     "hrrr_high": 60.6,
-    "adjusted_high": 56.8
+    "adjusted_high": 58.3
   },
   "PHI": {
-    "temp_f": 55.4,
-    "observed_at": "2026-05-02T02:20:00+00:00",
+    "temp_f": 53.6,
+    "observed_at": "2026-05-02T03:10:00+00:00",
     "station": "KPHL",
-    "obs_age_min": 25,
-    "pace_delta": 1.1,
-    "expected_now": 54.3,
-    "observed": 55.4,
+    "obs_age_min": 35,
+    "pace_delta": 1.5,
+    "expected_now": 52.1,
+    "observed": 53.6,
     "hrrr_high": 65.5,
-    "adjusted_high": 66.6
+    "adjusted_high": 67.0
   },
   "ATL": {
-    "temp_f": 62.6,
-    "observed_at": "2026-05-02T02:25:00+00:00",
+    "temp_f": 60.8,
+    "observed_at": "2026-05-02T03:25:00+00:00",
     "station": "KATL",
     "obs_age_min": 20,
-    "pace_delta": 2.4,
-    "expected_now": 60.2,
-    "observed": 62.6,
+    "pace_delta": 0.2,
+    "expected_now": 60.6,
+    "observed": 60.8,
     "hrrr_high": 66.8,
-    "adjusted_high": 69.2
+    "adjusted_high": 67.0
   },
   "HOU": {
     "temp_f": 57.2,
-    "observed_at": "2026-05-02T02:20:00+00:00",
+    "observed_at": "2026-05-02T03:10:00+00:00",
     "station": "KIAH",
-    "obs_age_min": 25,
-    "pace_delta": -0.3,
-    "expected_now": 57.5,
+    "obs_age_min": 35,
+    "pace_delta": 1.3,
+    "expected_now": 55.9,
     "observed": 57.2,
     "hrrr_high": 68.7,
-    "adjusted_high": 68.4
+    "adjusted_high": 70.0
   },
   "PHX": {
-    "temp_f": 86.0,
-    "observed_at": "2026-05-02T02:20:00+00:00",
+    "temp_f": 84.2,
+    "observed_at": "2026-05-02T03:10:00+00:00",
     "station": "KPHX",
-    "obs_age_min": 25,
-    "pace_delta": 2.9,
-    "expected_now": 83.1,
-    "observed": 86.0,
+    "obs_age_min": 35,
+    "pace_delta": 3.9,
+    "expected_now": 80.3,
+    "observed": 84.2,
     "hrrr_high": 88.9,
-    "adjusted_high": 91.8
+    "adjusted_high": 92.8
   }
 };
