@@ -1,13 +1,13 @@
 export const RESULTS = {
   "summary": {
-    "total": 285,
+    "total": 286,
     "wins": 155,
-    "losses": 130,
-    "win_rate": 0.5439,
-    "total_pnl": 0.22,
-    "total_risked": 154.78,
-    "roi": 0.1,
-    "current_streak": 2
+    "losses": 131,
+    "win_rate": 0.542,
+    "total_pnl": -0.34,
+    "total_risked": 155.34,
+    "roi": -0.2,
+    "current_streak": -1
   },
   "tiers": [
     {
@@ -20,9 +20,9 @@ export const RESULTS = {
     {
       "label": "SOLID",
       "desc": "10-20%",
-      "total": 263,
+      "total": 264,
       "wins": 149,
-      "pnl": 0.65
+      "pnl": 0.09
     },
     {
       "label": "LEAN",
@@ -41,25 +41,25 @@ export const RESULTS = {
     },
     {
       "label": "NO",
-      "total": 162,
+      "total": 163,
       "wins": 119,
-      "pnl": -6.51
+      "pnl": -7.08
     }
   ],
   "active_strategy": {
-    "total": 183,
+    "total": 184,
     "wins": 116,
-    "losses": 67,
-    "win_rate": 0.6339,
-    "total_pnl": 2.8,
-    "avg_pnl": 0.0153,
-    "roi": 2.5,
+    "losses": 68,
+    "win_rate": 0.6304,
+    "total_pnl": 2.24,
+    "avg_pnl": 0.0122,
+    "roi": 2.0,
     "groups": {
       "low": {
-        "total": 183,
+        "total": 184,
         "wins": 116,
-        "pnl": 2.8,
-        "roi": 2.5
+        "pnl": 2.24,
+        "roi": 2.0
       },
       "high": {
         "total": 0,
@@ -74,10 +74,10 @@ export const RESULTS = {
         "roi": 52.4
       },
       "no": {
-        "total": 120,
+        "total": 121,
         "wins": 88,
-        "pnl": -6.83,
-        "roi": -7.2
+        "pnl": -7.39,
+        "roi": -7.7
       },
       "horizon_0": {
         "total": 30,
@@ -86,14 +86,29 @@ export const RESULTS = {
         "roi": 1.0
       },
       "horizon_1": {
-        "total": 153,
+        "total": 154,
         "wins": 98,
-        "pnl": 2.63,
-        "roi": 2.8
+        "pnl": 2.07,
+        "roi": 2.2
       }
     }
   },
   "picks": [
+    [
+      "2026-05-02T09:38:52Z",
+      "PHX",
+      "2026-05-01",
+      "low",
+      67,
+      "NO",
+      -0.129,
+      0.346,
+      0.475,
+      68.0,
+      "LOSS",
+      0.56,
+      -0.56
+    ],
     [
       "2026-05-02T08:04:13Z",
       "ATL",
