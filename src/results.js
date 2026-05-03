@@ -1,13 +1,13 @@
 export const RESULTS = {
   "summary": {
-    "total": 291,
-    "wins": 158,
-    "losses": 133,
-    "win_rate": 0.543,
-    "total_pnl": 0.06,
-    "total_risked": 157.94,
-    "roi": 0.0,
-    "current_streak": -1
+    "total": 295,
+    "wins": 160,
+    "losses": 135,
+    "win_rate": 0.5424,
+    "total_pnl": -1.09,
+    "total_risked": 161.09,
+    "roi": -0.7,
+    "current_streak": 1
   },
   "tiers": [
     {
@@ -20,9 +20,9 @@ export const RESULTS = {
     {
       "label": "SOLID",
       "desc": "10-20%",
-      "total": 269,
-      "wins": 152,
-      "pnl": 0.49
+      "total": 273,
+      "wins": 154,
+      "pnl": -0.66
     },
     {
       "label": "LEAN",
@@ -35,31 +35,31 @@ export const RESULTS = {
   "directions": [
     {
       "label": "YES",
-      "total": 125,
+      "total": 126,
       "wins": 37,
-      "pnl": 7.27
+      "pnl": 6.52
     },
     {
       "label": "NO",
-      "total": 166,
-      "wins": 121,
-      "pnl": -7.21
+      "total": 169,
+      "wins": 123,
+      "pnl": -7.61
     }
   ],
   "active_strategy": {
-    "total": 189,
-    "wins": 119,
-    "losses": 70,
-    "win_rate": 0.6296,
-    "total_pnl": 2.59,
-    "avg_pnl": 0.0137,
-    "roi": 2.2,
+    "total": 193,
+    "wins": 121,
+    "losses": 72,
+    "win_rate": 0.6269,
+    "total_pnl": 1.44,
+    "avg_pnl": 0.0075,
+    "roi": 1.2,
     "groups": {
       "low": {
-        "total": 189,
-        "wins": 119,
-        "pnl": 2.59,
-        "roi": 2.2
+        "total": 193,
+        "wins": 121,
+        "pnl": 1.44,
+        "roi": 1.2
       },
       "high": {
         "total": 0,
@@ -68,16 +68,16 @@ export const RESULTS = {
         "roi": 0
       },
       "yes": {
-        "total": 65,
+        "total": 66,
         "wins": 29,
-        "pnl": 10.15,
-        "roi": 53.8
+        "pnl": 9.4,
+        "roi": 48.0
       },
       "no": {
-        "total": 124,
-        "wins": 90,
-        "pnl": -7.56,
-        "roi": -7.7
+        "total": 127,
+        "wins": 92,
+        "pnl": -7.96,
+        "roi": -8.0
       },
       "horizon_0": {
         "total": 32,
@@ -86,14 +86,74 @@ export const RESULTS = {
         "roi": -2.1
       },
       "horizon_1": {
-        "total": 157,
-        "wins": 100,
-        "pnl": 3.0,
-        "roi": 3.1
+        "total": 161,
+        "wins": 102,
+        "pnl": 1.85,
+        "roi": 1.8
       }
     }
   },
   "picks": [
+    [
+      "2026-05-03T09:15:30Z",
+      "DAL",
+      "2026-05-02",
+      "low",
+      44,
+      "NO",
+      -0.1699,
+      0.0001,
+      0.17,
+      50.0,
+      "WIN",
+      0.99,
+      0.01
+    ],
+    [
+      "2026-05-03T09:15:30Z",
+      "DAL",
+      "2026-05-02",
+      "low",
+      51,
+      "YES",
+      0.1722,
+      0.8272,
+      0.655,
+      50.0,
+      "LOSS",
+      0.75,
+      -0.75
+    ],
+    [
+      "2026-05-03T09:15:30Z",
+      "CHI",
+      "2026-05-02",
+      "low",
+      30,
+      "NO",
+      -0.1598,
+      0.0002,
+      0.16,
+      32.0,
+      "WIN",
+      0.97,
+      0.03
+    ],
+    [
+      "2026-05-03T09:15:30Z",
+      "PHX",
+      "2026-05-02",
+      "low",
+      68,
+      "NO",
+      -0.1427,
+      0.4523,
+      0.595,
+      71.1,
+      "LOSS",
+      0.44,
+      -0.44
+    ],
     [
       "2026-05-03T07:49:57Z",
       "MIA",
