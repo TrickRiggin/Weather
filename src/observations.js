@@ -3,7 +3,7 @@ export const OBSERVATIONS = {
     "temp_f": 71.1,
     "observed_at": "2026-05-04T19:51:00+00:00",
     "station": "KNYC",
-    "obs_age_min": 54,
+    "obs_age_min": 69,
     "pace_delta": -1.5,
     "expected_now": 72.6,
     "observed": 71.1,
@@ -12,7 +12,7 @@ export const OBSERVATIONS = {
   },
   "LAX": {
     "temp_f": 66.2,
-    "observed_at": "2026-05-04T20:25:00+00:00",
+    "observed_at": "2026-05-04T20:40:00+00:00",
     "station": "KLAX",
     "obs_age_min": 20,
     "pace_delta": 0.3,
@@ -22,32 +22,32 @@ export const OBSERVATIONS = {
     "adjusted_high": 66.3
   },
   "CHI": {
-    "temp_f": 80.6,
-    "observed_at": "2026-05-04T20:20:00+00:00",
+    "temp_f": 78.8,
+    "observed_at": "2026-05-04T20:35:00+00:00",
     "station": "KMDW",
     "obs_age_min": 25,
-    "pace_delta": 2.0,
+    "pace_delta": 0.2,
     "expected_now": 78.6,
-    "observed": 80.6,
+    "observed": 78.8,
     "hrrr_high": 79.1,
-    "adjusted_high": 81.1
+    "adjusted_high": 79.3
   },
   "MIA": {
-    "temp_f": 80.6,
-    "observed_at": "2026-05-04T20:20:00+00:00",
+    "temp_f": 78.8,
+    "observed_at": "2026-05-04T20:35:00+00:00",
     "station": "KMIA",
     "obs_age_min": 25,
-    "pace_delta": 6.6,
+    "pace_delta": 4.8,
     "expected_now": 74.0,
-    "observed": 80.6,
+    "observed": 78.8,
     "hrrr_high": 81.0,
-    "adjusted_high": 87.6
+    "adjusted_high": 85.8
   },
   "DAL": {
     "temp_f": 80.6,
-    "observed_at": "2026-05-04T20:25:00+00:00",
+    "observed_at": "2026-05-04T20:35:00+00:00",
     "station": "KDFW",
-    "obs_age_min": 20,
+    "obs_age_min": 25,
     "pace_delta": 0.6,
     "expected_now": 80.0,
     "observed": 80.6,
@@ -55,19 +55,19 @@ export const OBSERVATIONS = {
     "adjusted_high": 82.1
   },
   "DEN": {
-    "temp_f": 68.0,
-    "observed_at": "2026-05-04T20:20:00+00:00",
+    "temp_f": 66.2,
+    "observed_at": "2026-05-04T20:35:00+00:00",
     "station": "KDEN",
     "obs_age_min": 25,
-    "pace_delta": -4.4,
+    "pace_delta": -6.2,
     "expected_now": 72.4,
-    "observed": 68.0,
+    "observed": 66.2,
     "hrrr_high": 72.6,
-    "adjusted_high": 68.2
+    "adjusted_high": 66.4
   },
   "PHI": {
     "temp_f": 75.2,
-    "observed_at": "2026-05-04T20:20:00+00:00",
+    "observed_at": "2026-05-04T20:35:00+00:00",
     "station": "KPHL",
     "obs_age_min": 25,
     "pace_delta": 2.2,
@@ -78,7 +78,7 @@ export const OBSERVATIONS = {
   },
   "ATL": {
     "temp_f": 77.0,
-    "observed_at": "2026-05-04T20:25:00+00:00",
+    "observed_at": "2026-05-04T20:40:00+00:00",
     "station": "KATL",
     "obs_age_min": 20,
     "pace_delta": -0.1,
@@ -89,7 +89,7 @@ export const OBSERVATIONS = {
   },
   "HOU": {
     "temp_f": 82.4,
-    "observed_at": "2026-05-04T20:20:00+00:00",
+    "observed_at": "2026-05-04T20:35:00+00:00",
     "station": "KIAH",
     "obs_age_min": 25,
     "pace_delta": 1.7,
@@ -100,7 +100,7 @@ export const OBSERVATIONS = {
   },
   "PHX": {
     "temp_f": 75.2,
-    "observed_at": "2026-05-04T20:20:00+00:00",
+    "observed_at": "2026-05-04T20:35:00+00:00",
     "station": "KPHX",
     "obs_age_min": 25,
     "pace_delta": -2.0,
