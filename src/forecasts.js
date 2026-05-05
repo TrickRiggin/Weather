@@ -315,10 +315,10 @@ export const FORECASTS = {
         "ecmwf_ifs025": 34.1
       },
       "low_mean": 27.5,
-      "low_std": 3.36,
+      "low_std": 3.37,
       "low_models": {
         "ncep_hrrr_conus": 31.2,
-        "ncep_nbm_conus": 26.8,
+        "ncep_nbm_conus": 26.7,
         "ecmwf_ifs025": 24.6
       },
       "model_count": 3
@@ -497,10 +497,10 @@ export const FORECASTS = {
     "2026-05-07": {
       "high_mean": 77.2,
       "high_std": 3.0,
-      "high_min": 76.8,
+      "high_min": 76.9,
       "high_max": 77.6,
       "high_models": {
-        "ncep_nbm_conus": 76.8,
+        "ncep_nbm_conus": 76.9,
         "ecmwf_ifs025": 77.6
       },
       "low_mean": 68.8,
