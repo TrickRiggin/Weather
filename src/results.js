@@ -1,13 +1,13 @@
 export const RESULTS = {
   "summary": {
-    "total": 331,
-    "wins": 180,
+    "total": 332,
+    "wins": 181,
     "losses": 151,
-    "win_rate": 0.5438,
-    "total_pnl": -4.83,
-    "total_risked": 184.83,
+    "win_rate": 0.5452,
+    "total_pnl": -4.76,
+    "total_risked": 185.76,
     "roi": -2.6,
-    "current_streak": -5
+    "current_streak": 1
   },
   "tiers": [
     {
@@ -20,9 +20,9 @@ export const RESULTS = {
     {
       "label": "SOLID",
       "desc": "10-20%",
-      "total": 309,
-      "wins": 174,
-      "pnl": -4.4
+      "total": 310,
+      "wins": 175,
+      "pnl": -4.33
     },
     {
       "label": "LEAN",
@@ -41,24 +41,24 @@ export const RESULTS = {
     },
     {
       "label": "NO",
-      "total": 194,
-      "wins": 140,
-      "pnl": -11.88
+      "total": 195,
+      "wins": 141,
+      "pnl": -11.81
     }
   ],
   "active_strategy": {
-    "total": 227,
-    "wins": 141,
+    "total": 228,
+    "wins": 142,
     "losses": 86,
-    "win_rate": 0.6211,
-    "total_pnl": -1.9,
-    "avg_pnl": -0.0084,
+    "win_rate": 0.6228,
+    "total_pnl": -1.83,
+    "avg_pnl": -0.008,
     "roi": -1.3,
     "groups": {
       "low": {
-        "total": 227,
-        "wins": 141,
-        "pnl": -1.9,
+        "total": 228,
+        "wins": 142,
+        "pnl": -1.83,
         "roi": -1.3
       },
       "high": {
@@ -74,16 +74,16 @@ export const RESULTS = {
         "roi": 48.1
       },
       "no": {
-        "total": 152,
-        "wins": 109,
-        "pnl": -12.29,
-        "roi": -10.1
+        "total": 153,
+        "wins": 110,
+        "pnl": -12.22,
+        "roi": -10.0
       },
       "horizon_0": {
-        "total": 35,
-        "wins": 19,
-        "pnl": -2.22,
-        "roi": -10.5
+        "total": 36,
+        "wins": 20,
+        "pnl": -2.15,
+        "roi": -9.7
       },
       "horizon_1": {
         "total": 192,
@@ -94,6 +94,21 @@ export const RESULTS = {
     }
   },
   "picks": [
+    [
+      "2026-05-07T10:39:03Z",
+      "LAX",
+      "2026-05-06",
+      "low",
+      57,
+      "NO",
+      -0.1588,
+      0.0162,
+      0.175,
+      55.4,
+      "WIN",
+      0.93,
+      0.07
+    ],
     [
       "2026-05-07T08:19:01Z",
       "NYC",
